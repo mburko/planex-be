@@ -1,4 +1,6 @@
 from flask import Flask, render_template, url_for, redirect
+from flask import request
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
@@ -6,12 +8,13 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
 
+from mock_fe import test_run
 app = Flask(__name__)
 
 bcryptor = Bcrypt(app)
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/planex_db.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/planex.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SECRET_KEY'] = 'test-secret-key'
 
@@ -19,7 +22,7 @@ db = SQLAlchemy(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+#login_manager.login_view = 'login'
 
 
 
@@ -27,14 +30,7 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-"""
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    login = db.Column(db.String(20), nullable=False, unique=True)
-    password = db.Column(db.String(80), nullable=False)
 
-
-"""
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(20), nullable=False, unique=True)
@@ -86,8 +82,17 @@ def home():
     return render_template('home.html')
 
 
+@app.route('/123', methods=['GET', 'POST'])
+def test_request():
+    test_login = request.args["login"]
+    test_pass = request.args["password"]
+
+    return {"Log-Pass: ": f"{test_login} {test_pass}"}
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(login=form.login.data).first()
@@ -122,7 +127,9 @@ def register():
 
     if form.validate_on_submit():
         hashed_password = bcryptor.generate_password_hash(form.password.data)
+        # create new user ------------------------------------------------------------
         new_user = User(login=form.login.data, password=hashed_password)
+        # ----------------------------------------------------------------------------
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('login'))
@@ -132,3 +139,4 @@ def register():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
