@@ -1,5 +1,5 @@
 from flask import Flask, url_for, redirect
-from flask import request
+from flask import request, make_response
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user
@@ -44,34 +44,27 @@ def load_login_module(application, database):
             "Response": "Home page"
         }
 
-    @app.route('/123', methods=['GET', 'POST'])
-    def test_request():
-        content_type = request.headers.get('Content-Type')
-        if content_type == 'application/json':
-            json = request.get_json()
-            print(json)
-            return {"current": "test_request",
-                    "json": {json}
-                    }
-        else:
-            return 'Content-Type not supported!'
-
-    @app.route('/login', methods=['GET', 'POST'])
+    @app.route('/login', methods=['POST'])
     def login():
         content_type = request.headers.get('Content-Type')
         if content_type == 'application/json':
             json_data = request.get_json()
             print(json_data)
-            if not json_data["login"] or not json_data["password"]:
+            print(json_data["password"])
+            if \
+                    not json_data["login"] \
+                    or not json_data["password"]:
                 return {
                     "Response": "Missing information"
                 }
             else:
                 user = User.query.filter_by(login=json_data["login"]).first()
-                print(user.password, )
-                if user:
+                if user is not None:
                     if bcryptor.check_password_hash(user.password, json_data["password"]):
                         login_user(user)
+                        #resp = make_response(redirect(url_for('user_page')))
+                        #resp.set_cookie('userID', user.id)
+                        #return resp
                         return redirect(url_for('user_page'))
                     else:
                         return {
@@ -84,14 +77,16 @@ def load_login_module(application, database):
         else:
             return 'Content-Type not supported!'
 
-    @app.route('/user_page', methods=['GET', 'POST'])
+    @app.route('/user_page', methods=['GET'])
     @login_required
     def user_page():
+
+        #uid = request.cookies.to_dict()["session"]["userID"]
         return {
             "Response": "Welcome to User page"
         }
 
-    @app.route('/logout', methods=['GET', 'POST'])
+    @app.route('/logout', methods=['GET'])
     @login_required
     def logout():
         logout_user()
@@ -99,22 +94,21 @@ def load_login_module(application, database):
             "Response": "Log out"
         }
 
-    @app.route('/register', methods=['GET', 'POST'])
+    @app.route('/register', methods=['POST'])
     def register():
-        # ******************************************************************************************************
         content_type = request.headers.get('Content-Type')
         if content_type == 'application/json':
             json_data = request.get_json()
             print(json_data)
             if \
                     "login" not in json_data \
-                            or not json_data["login"] \
-                            or "password" not in json_data \
-                            or not json_data["password"] \
-                            or "email" not in json_data \
-                            or not json_data["email"] \
-                            or "username" not in json_data \
-                            or not json_data["username"]:
+                    or not json_data["login"] \
+                    or "password" not in json_data \
+                    or not json_data["password"] \
+                    or "email" not in json_data \
+                    or not json_data["email"] \
+                    or "username" not in json_data \
+                    or not json_data["username"]:
                 return {
                     "Response": "Missing information"
                 }
@@ -132,13 +126,12 @@ def load_login_module(application, database):
             return {
                 "Response": "Registration successful (maybe redirect to login page)"
             }
-            # ???????
             # return redirect(url_for('login'))
         else:
             return 'Content-Type not supported!'
 
+# **********************************************************************************
 
-# ******************************************************************************************************
 
 if __name__ == "__main__":
     app_1 = Flask(__name__)
