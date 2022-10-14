@@ -1,11 +1,12 @@
 from flask import Flask, url_for, redirect
-from flask import request, make_response
+from flask import request
 
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user
+from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 
 from flask_json import FlaskJSON
+
 
 
 def load_login_module(application, database):
@@ -18,6 +19,9 @@ def load_login_module(application, database):
     login_manager.init_app(app)
 
     FlaskJSON(app)
+
+
+
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -62,9 +66,6 @@ def load_login_module(application, database):
                 if user is not None:
                     if bcryptor.check_password_hash(user.password, json_data["password"]):
                         login_user(user)
-                        #resp = make_response(redirect(url_for('user_page')))
-                        #resp.set_cookie('userID', user.id)
-                        #return resp
                         return redirect(url_for('user_page'))
                     else:
                         return {
@@ -81,9 +82,11 @@ def load_login_module(application, database):
     @login_required
     def user_page():
 
-        #uid = request.cookies.to_dict()["session"]["userID"]
+        t = current_user.username
+       #print(t)
+
         return {
-            "Response": "Welcome to User page"
+            "Response": "Welcome to User page, "+t
         }
 
     @app.route('/logout', methods=['GET'])
