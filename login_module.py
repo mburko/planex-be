@@ -8,7 +8,6 @@ from flask_bcrypt import Bcrypt
 from flask_json import FlaskJSON
 
 
-
 def load_login_module(application, database):
     app = application
     db = database
@@ -19,8 +18,6 @@ def load_login_module(application, database):
     login_manager.init_app(app)
 
     FlaskJSON(app)
-
-
 
 
     @login_manager.user_loader
@@ -123,7 +120,8 @@ def load_login_module(application, database):
             new_user = User(login=json_data["login"],
                             password=hashed_password,
                             email=json_data["email"],
-                            username=json_data["username"])
+                            username=json_data["username"],
+                            teamworking=False)
             db.session.add(new_user)
             db.session.commit()
             return {
