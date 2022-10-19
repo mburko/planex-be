@@ -135,6 +135,10 @@ def load_login_module(application, database):
 if __name__ == "__main__":
     app_1 = Flask(__name__)
 
+    from flask_cors import CORS
+
+    CORS(app_1)
+
     FlaskJSON(app_1)
 
     app_1.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/planex.db'

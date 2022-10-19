@@ -16,11 +16,6 @@ db = SQLAlchemy(app)
 CORS(app)
 
 
-# login remember me
-# user ac settings
-# extern config file
-# secret key
-# cookie expiration details
 
 if __name__ == "__main__":
     load_login_module(app, db)
