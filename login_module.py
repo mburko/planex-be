@@ -19,7 +19,6 @@ def load_login_module(application, database):
 
     FlaskJSON(app)
 
-
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -54,7 +53,7 @@ def load_login_module(application, database):
             print(json_data["password"])
             if \
                     not json_data["login"] \
-                    or not json_data["password"]:
+                            or not json_data["password"]:
                 return {
                     "Response": "Missing information"
                 }
@@ -80,10 +79,8 @@ def load_login_module(application, database):
     def user_page():
 
         t = current_user.username
-       #print(t)
-
         return {
-            "Response": "Welcome to User page, "+t
+            "Response": "Welcome to User page, " + t
         }
 
     @app.route('/logout', methods=['GET'])
@@ -102,13 +99,13 @@ def load_login_module(application, database):
             print(json_data)
             if \
                     "login" not in json_data \
-                    or not json_data["login"] \
-                    or "password" not in json_data \
-                    or not json_data["password"] \
-                    or "email" not in json_data \
-                    or not json_data["email"] \
-                    or "username" not in json_data \
-                    or not json_data["username"]:
+                            or not json_data["login"] \
+                            or "password" not in json_data \
+                            or not json_data["password"] \
+                            or "email" not in json_data \
+                            or not json_data["email"] \
+                            or "username" not in json_data \
+                            or not json_data["username"]:
                 return {
                     "Response": "Missing information"
                 }
@@ -130,6 +127,7 @@ def load_login_module(application, database):
             # return redirect(url_for('login'))
         else:
             return 'Content-Type not supported!'
+
 
 # **********************************************************************************
 
