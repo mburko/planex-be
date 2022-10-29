@@ -51,14 +51,14 @@ def load_user_crud(application, database):
         else:
             return 'Content-Type not supported!'
 
-
     @app.route('/info')  # Retrieve single user
     @login_module.login_required
     def RetrieveSingleUser():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         if user:
             return str(user)
-        abort(404)
+        else:
+            return "User not found", 400
 
     @app.route('/info/update', methods=['POST'])  # update user
     @login_module.login_required
@@ -77,7 +77,12 @@ def load_user_crud(application, database):
 
                     db.session.commit()
                     return redirect(f'/info')
-                abort(404)
+                else:
+                    return "User not found", 400
+            else:
+                return "Wrong content type supplied, JSON expected", 400
+        else:
+            return "Wrong request", 400
 
     @app.route('/delete', methods=['POST'])  # delete user
     @login_module.login_required
@@ -88,4 +93,7 @@ def load_user_crud(application, database):
                 db.session.delete(user)
                 db.session.commit()
                 return redirect('/')
-            abort(404)
+            else:
+                return "User not found", 400
+        else:
+            return "Wrong request", 400
