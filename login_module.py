@@ -24,14 +24,6 @@ def load_login_module(application, database):
     def load_user(user_id):
         return UserModel.query.get(int(user_id))
 
-    # class User(db.Model, UserMixin):
-    #     id = db.Column(db.Integer, primary_key=True)
-    #     login = db.Column(db.String(20), nullable=False, unique=True)
-    #     password = db.Column(db.String(80), nullable=False)
-    #     username = db.Column(db.String(50))
-    #     email = db.Column(db.String(50))
-    #     team_working = db.Column(db.Boolean, default=False)
-
     def validate_login(login_field):
         existing_user_login = UserModel.query.filter_by(
             login=login_field).first()
