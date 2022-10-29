@@ -19,4 +19,4 @@ CORS(app)
 if __name__ == "__main__":
     load_login_module(app, db)
     load_user_crud(app, db)
-    app.run(debug=True, port=8080)
+    app.run(debug=True)
