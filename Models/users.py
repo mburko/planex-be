@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-class UserModel(db.Model):
+class UserModel(db.Model, UserMixin):
     __tablename__ = "User"
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(20), nullable=False, unique=True)

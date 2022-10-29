@@ -4,6 +4,7 @@ from flask import request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
+from Models.users import UserModel
 
 from flask_json import FlaskJSON
 
@@ -21,18 +22,18 @@ def load_login_module(application, database):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return UserModel.query.get(int(user_id))
 
-    class User(db.Model, UserMixin):
-        id = db.Column(db.Integer, primary_key=True)
-        login = db.Column(db.String(20), nullable=False, unique=True)
-        password = db.Column(db.String(80), nullable=False)
-        username = db.Column(db.String(50))
-        email = db.Column(db.String(50))
-        team_working = db.Column(db.Boolean, default=False)
+    # class User(db.Model, UserMixin):
+    #     id = db.Column(db.Integer, primary_key=True)
+    #     login = db.Column(db.String(20), nullable=False, unique=True)
+    #     password = db.Column(db.String(80), nullable=False)
+    #     username = db.Column(db.String(50))
+    #     email = db.Column(db.String(50))
+    #     team_working = db.Column(db.Boolean, default=False)
 
     def validate_login(login_field):
-        existing_user_login = User.query.filter_by(
+        existing_user_login = UserModel.query.filter_by(
             login=login_field).first()
         if existing_user_login:
             return False
@@ -58,7 +59,7 @@ def load_login_module(application, database):
                     "Response": "Missing information"
                 }
             else:
-                user = User.query.filter_by(login=json_data["login"]).first()
+                user = UserModel.query.filter_by(login=json_data["login"]).first()
                 if user is not None:
                     if bcryptor.check_password_hash(user.password, json_data["password"]):
                         login_user(user)
@@ -114,7 +115,7 @@ def load_login_module(application, database):
                     "Response": "User already exists"
                 }
             hashed_password = bcryptor.generate_password_hash(json_data['password'])
-            new_user = User(login=json_data["login"],
+            new_user = UserModel(login=json_data["login"],
                             password=hashed_password,
                             email=json_data["email"],
                             username=json_data["username"],
