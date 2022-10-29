@@ -53,19 +53,13 @@ def load_user_crud(application, database):
         if request.method == 'POST':
             if content_type == 'application/json':
                 if user:
-                    db.session.delete(user)
-                    db.session.commit()
-
                     json_data = request.get_json()
-                    login = json_data['login']
-                    password = json_data['password']
-                    username = json_data['username']
-                    email = json_data['email']
-                    team_working = json_data['team_working']
-                    user = UserModel(login=login, password=password, username=username, email=email,
-                                     team_working=team_working)
+                    user.login = json_data['login']
+                    user.password = json_data['password']
+                    user.username = json_data['username']
+                    user.email = json_data['email']
+                    user.team_working = json_data['team_working']
 
-                    db.session.add(user)
                     db.session.commit()
                     return redirect(f'/data/{id}')
                 return f"User with id = {id} doesn't exist"
@@ -94,4 +88,3 @@ if __name__ == "__main__":
 
     load_user_crud(app_2, db_2)
     app_2.run(debug=True)
-
