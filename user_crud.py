@@ -51,20 +51,19 @@ def load_user_crud(application, database):
         else:
             return 'Content-Type not supported!'
 
-    @app.route('/data/<int:id>')  # Retrieve single user
+
+    @app.route('/info')  # Retrieve single user
     @login_module.login_required
-    def RetrieveSingleUser(id):
-        if login_module.current_user.id != id:
-            return "Permission denied"
-        user = db.session.query(UserModel).filter_by(id=id).first()
+    def RetrieveSingleUser():
+        user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         if user:
             return str(user)
-        return f"User with id = {id} doesn't exist"
+        abort(404)
 
-    @app.route('/data/<int:id>/update', methods=['POST'])  # update user
+    @app.route('/info/update', methods=['POST'])  # update user
     @login_module.login_required
-    def update(id):
-        user = db.session.query(UserModel).filter_by(id=id).first()
+    def update():
+        user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         content_type = request.headers.get('Content-Type')
         if request.method == 'POST':
             if content_type == 'application/json':
@@ -77,15 +76,13 @@ def load_user_crud(application, database):
                     user.team_working = json_data['team_working']
 
                     db.session.commit()
-                    return redirect(f'/data/{id}')
-                return f"User with id = {id} doesn't exist"
+                    return redirect(f'/info')
+                abort(404)
 
-    @app.route('/data/<int:id>/delete', methods=['POST'])  # delete user
+    @app.route('/delete', methods=['POST'])  # delete user
     @login_module.login_required
-    def delete(id):
-        if login_module.current_user.id != id:
-            return "Permission denied"
-        user = db.session.query(UserModel).filter_by(id=id).first()
+    def delete():
+        user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         if request.method == 'POST':
             if user:
                 db.session.delete(user)
