@@ -9,6 +9,13 @@ from Models.users import UserModel
 from flask_json import FlaskJSON
 
 
+def validate_login(login_field):
+    existing_user_login = UserModel.query.filter_by(
+        login=login_field).first()
+    if existing_user_login:
+        return False
+    return True
+
 def load_login_module(application, database):
     app = application
     db = database
@@ -23,13 +30,6 @@ def load_login_module(application, database):
     @login_manager.user_loader
     def load_user(user_id):
         return UserModel.query.get(int(user_id))
-
-    def validate_login(login_field):
-        existing_user_login = UserModel.query.filter_by(
-            login=login_field).first()
-        if existing_user_login:
-            return False
-        return True
 
     @app.route('/')
     def home():
@@ -84,42 +84,7 @@ def load_login_module(application, database):
             "Response": "Log out"
         }
 
-    @app.route('/register', methods=['POST'])
-    def register():
-        content_type = request.headers.get('Content-Type')
-        if content_type == 'application/json':
-            json_data = request.get_json()
-            print(json_data)
-            if \
-                    "login" not in json_data \
-                            or not json_data["login"] \
-                            or "password" not in json_data \
-                            or not json_data["password"] \
-                            or "email" not in json_data \
-                            or not json_data["email"] \
-                            or "username" not in json_data \
-                            or not json_data["username"]:
-                return {
-                    "Response": "Missing information"
-                }
-            if not validate_login(json_data["login"]):
-                return {
-                    "Response": "User already exists"
-                }
-            hashed_password = bcryptor.generate_password_hash(json_data['password'])
-            new_user = UserModel(login=json_data["login"],
-                            password=hashed_password,
-                            email=json_data["email"],
-                            username=json_data["username"],
-                            team_working=False)
-            db.session.add(new_user)
-            db.session.commit()
-            return {
-                "Response": "Registration successful (maybe redirect to login page)"
-            }
-            # return redirect(url_for('login'))
-        else:
-            return 'Content-Type not supported!'
+
 
 
 # **********************************************************************************

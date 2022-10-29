@@ -1,52 +1,68 @@
 from flask import Flask, request, redirect, abort
+from flask_bcrypt import Bcrypt
 
-from flask_sqlalchemy import SQLAlchemy
 from flask_json import FlaskJSON
 from Models.users import UserModel
-import json
+import login_module
 
 
 def load_user_crud(application, database):
     app = application
     db = database
 
+    bcryptor = Bcrypt(app)
+
     FlaskJSON(app)
 
-    @app.route('/data/create', methods=['POST'])  # Create user add to db
-    def create():
+    @app.route('/register', methods=['POST'])
+    def register():
         content_type = request.headers.get('Content-Type')
-        if request.method == 'POST':
-            if content_type == 'application/json':
-                json_data = request.get_json()
-                login = json_data['login']
-                password = json_data['password']
-                username = json_data['username']
-                email = json_data['email']
-                team_working = json_data['team_working']
-                user = UserModel(login=login, password=password, username=username, email=email,
-                                 team_working=team_working)
-                db.session.add(user)
-                db.session.commit()
-                return redirect('/data')
-
-    @app.route('/data')  # Retrieve list of users
-    def RetrieveDataList():
-        users = UserModel.query.all()
-        usr_arr = ""
-        for el in users:
-            x = str(el)
-            usr_arr += x + '\n'
-
-        return usr_arr
+        if content_type == 'application/json':
+            json_data = request.get_json()
+            print(json_data)
+            if \
+                    "login" not in json_data \
+                            or not json_data["login"] \
+                            or "password" not in json_data \
+                            or not json_data["password"] \
+                            or "email" not in json_data \
+                            or not json_data["email"] \
+                            or "username" not in json_data \
+                            or not json_data["username"]:
+                return {
+                    "Response": "Missing information"
+                }
+            if not login_module.validate_login(json_data["login"]):
+                return {
+                    "Response": "User already exists"
+                }
+            hashed_password = bcryptor.generate_password_hash(json_data['password'])
+            new_user = UserModel(login=json_data["login"],
+                                 password=hashed_password,
+                                 email=json_data["email"],
+                                 username=json_data["username"],
+                                 team_working=False)
+            db.session.add(new_user)
+            db.session.commit()
+            return {
+                "Response": "Registration successful (maybe redirect to login page)"
+            }
+            # return redirect(url_for('login'))
+        else:
+            return 'Content-Type not supported!'
 
     @app.route('/data/<int:id>')  # Retrieve single user
+    @login_module.login_required
     def RetrieveSingleUser(id):
+        if login_module.current_user.id != id:
+            return "Permission denied"
         user = db.session.query(UserModel).filter_by(id=id).first()
         if user:
             return str(user)
         return f"User with id = {id} doesn't exist"
 
-    @app.route('/data/<int:id>/update', methods=['GET', 'POST'])  # update user
+    @app.route('/data/<int:id>/update', methods=['POST'])  # update user
+    @login_module.login_required
     def update(id):
         user = db.session.query(UserModel).filter_by(id=id).first()
         content_type = request.headers.get('Content-Type')
@@ -64,27 +80,15 @@ def load_user_crud(application, database):
                     return redirect(f'/data/{id}')
                 return f"User with id = {id} doesn't exist"
 
-    @app.route('/data/<int:id>/delete', methods=['GET', 'POST'])  # delete user
+    @app.route('/data/<int:id>/delete', methods=['POST'])  # delete user
+    @login_module.login_required
     def delete(id):
+        if login_module.current_user.id != id:
+            return "Permission denied"
         user = db.session.query(UserModel).filter_by(id=id).first()
         if request.method == 'POST':
             if user:
                 db.session.delete(user)
                 db.session.commit()
-                return redirect('/data')
+                return redirect('/')
             abort(404)
-
-
-if __name__ == "__main__":
-    app_2 = Flask(__name__)
-
-    app_2.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/planex.db'
-    app_2.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-    app_2.config['SECRET_KEY'] = 'test-secret-key'
-
-    FlaskJSON(app_2)
-
-    db_2 = SQLAlchemy(app_2)
-
-    load_user_crud(app_2, db_2)
-    app_2.run(debug=True)
