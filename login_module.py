@@ -29,7 +29,7 @@ def load_login_module(application, database):
         password = db.Column(db.String(80), nullable=False)
         username = db.Column(db.String(50))
         email = db.Column(db.String(50))
-        teamworking = db.Column(db.Boolean, default=False)
+        team_working = db.Column(db.Boolean, default=False)
 
     def validate_login(login_field):
         existing_user_login = User.query.filter_by(
@@ -118,7 +118,7 @@ def load_login_module(application, database):
                             password=hashed_password,
                             email=json_data["email"],
                             username=json_data["username"],
-                            teamworking=False)
+                            team_working=False)
             db.session.add(new_user)
             db.session.commit()
             return {
