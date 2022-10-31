@@ -4,9 +4,17 @@ from flask import request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
+from Models.users import UserModel
 
 from flask_json import FlaskJSON
 
+
+def validate_login(login_field):
+    existing_user_login = UserModel.query.filter_by(
+        login=login_field).first()
+    if existing_user_login:
+        return False
+    return True
 
 def load_login_module(application, database):
     app = application
@@ -21,22 +29,7 @@ def load_login_module(application, database):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
-
-    class User(db.Model, UserMixin):
-        id = db.Column(db.Integer, primary_key=True)
-        login = db.Column(db.String(20), nullable=False, unique=True)
-        password = db.Column(db.String(80), nullable=False)
-        username = db.Column(db.String(50))
-        email = db.Column(db.String(50))
-        teamworking = db.Column(db.Boolean, default=False)
-
-    def validate_login(login_field):
-        existing_user_login = User.query.filter_by(
-            login=login_field).first()
-        if existing_user_login:
-            return False
-        return True
+        return UserModel.query.get(int(user_id))
 
     @app.route('/')
     def home():
@@ -58,7 +51,7 @@ def load_login_module(application, database):
                     "Response": "Missing information"
                 }
             else:
-                user = User.query.filter_by(login=json_data["login"]).first()
+                user = UserModel.query.filter_by(login=json_data["login"]).first()
                 if user is not None:
                     if bcryptor.check_password_hash(user.password, json_data["password"]):
                         login_user(user)
@@ -91,42 +84,7 @@ def load_login_module(application, database):
             "Response": "Log out"
         }
 
-    @app.route('/register', methods=['POST'])
-    def register():
-        content_type = request.headers.get('Content-Type')
-        if content_type == 'application/json':
-            json_data = request.get_json()
-            print(json_data)
-            if \
-                    "login" not in json_data \
-                            or not json_data["login"] \
-                            or "password" not in json_data \
-                            or not json_data["password"] \
-                            or "email" not in json_data \
-                            or not json_data["email"] \
-                            or "username" not in json_data \
-                            or not json_data["username"]:
-                return {
-                    "Response": "Missing information"
-                }
-            if not validate_login(json_data["login"]):
-                return {
-                    "Response": "User already exists"
-                }
-            hashed_password = bcryptor.generate_password_hash(json_data['password'])
-            new_user = User(login=json_data["login"],
-                            password=hashed_password,
-                            email=json_data["email"],
-                            username=json_data["username"],
-                            teamworking=False)
-            db.session.add(new_user)
-            db.session.commit()
-            return {
-                "Response": "Registration successful (maybe redirect to login page)"
-            }
-            # return redirect(url_for('login'))
-        else:
-            return 'Content-Type not supported!'
+
 
 
 # **********************************************************************************
