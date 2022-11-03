@@ -76,8 +76,7 @@ def load_event_crud(application, database):
                         event.finish = datetime.strptime(json_data["finish"], '%y/%m/%d %H:%M:%S')
                         event.title = json_data["title"]
                         event.repeat = json_data["repeat"]
-                        event.description = json_data[
-                            "description"]
+                        event.description = json_data["description"]
                         # in this update event was connected to user_event, so if necessary
                         # properties of user_event can also be modified
                         db.session.commit()
@@ -90,3 +89,30 @@ def load_event_crud(application, database):
                 return "Wrong content type supplied, JSON expected", 400
         else:
             return "Wrong request", 400
+
+    @app.route('/event', methods=['DELETE'])  # delete user
+    @login_module.login_required
+    def DeleteEvent():
+        if request.method == 'DELETE':
+            content_type = request.headers.get('Content-Type')
+            if content_type == 'application/json':
+                json_data = request.get_json()
+                user_event = db.session.query(UserEventModel).filter_by(id=json_data["user_event_id"]).first()
+                if user_event:
+                    event = db.session.query(EventModel).filter_by(id=user_event.event_id).first()
+                    if event:
+                        db.session.delete(user_event)
+                        db.session.delete(event)
+                        db.session.commit()
+
+                        return "Event and User_event were successfully deleted", 200
+                    else:
+                        return "Event not found", 400
+                else:
+                    return "User event not found", 400
+            else:
+                return "Wrong content type supplied, JSON expected", 400
+        else:
+            return "Wrong request", 400
+
+

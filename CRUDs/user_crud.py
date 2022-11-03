@@ -84,11 +84,11 @@ def load_user_crud(application, database):
         else:
             return "Wrong request", 400
 
-    @app.route('/delete', methods=['POST'])  # delete user
+    @app.route('/delete', methods=['DELETE'])  # delete user
     @login_module.login_required
     def delete():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
-        if request.method == 'POST':
+        if request.method == 'DELETE':
             if user:
                 db.session.delete(user)
                 db.session.commit()
