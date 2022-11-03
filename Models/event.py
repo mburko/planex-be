@@ -4,26 +4,27 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
-class UserModel(db.Model, UserMixin):
+class EventModel(db.Model, UserMixin):
     __tablename__ = "Event"
     id = db.Column(db.Integer, primary_key=True)
-    start = db.Column(db.String(20), nullable=False, unique=True)
-    finish = db.Column(db.String(80), nullable=False)
-    title = db.Column(db.String(50))
-    repeat = db.Column(db.String(50))
-    description = db.Column(db.Boolean, default=False)
+    start = db.Column(db.DateTime, nullable=False)
+    finish = db.Column(db.DateTime, nullable=False)
+    title = db.Column(db.String(100))
+    repeat = db.Column(db.String(50)) #types DAILY / WEEKLY / YEARLY
+    # add validation later!!!
+    description = db.Column(db.String(150))
 
-    def __init__(self, login, password, username, email, team_working):
-        self.login = login
-        self.password = password
-        self.username = username
-        self.email = email
-        self.team_working = team_working
+    def __init__(self, start, finish, title, repeat, description):
+        self.start = start
+        self.finish = finish
+        self.title = title
+        self.repeat = repeat
+        self.description = description
 
     def __repr__(self):
         return '{' + f' "id" : "{self.id}",' \
-                     f' "login" : "{self.login}",' \
-                     f' "password" : "{self.password}",' \
-                     f' "username" : "{self.username}",' \
-                     f' "email" : "{self.email}",' \
-                     f' "team_working" : {self.team_working}' + '}'
+                     f' "start" : "{self.start}",' \
+                     f' "finish" : "{self.finish}",' \
+                     f' "title" : "{self.title}",' \
+                     f' "repeat" : "{self.repeat}",' \
+                     f' "description" : {self.description}' + '}'

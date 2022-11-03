@@ -4,7 +4,7 @@ from flask import request, redirect, url_for
 from flask_json import FlaskJSON
 
 from Models.category import CategoryModel, CategorySchema
-import login_module
+from CRUDs import login_module
 
 
 def load_category_crud(application, database):
