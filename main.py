@@ -1,9 +1,9 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-from login_module import load_login_module
-from user_crud import load_user_crud
-from category_crud import load_category_crud
+from CRUDs.login_module import load_login_module
+from CRUDs.user_crud import load_user_crud
+from CRUDs.category_crud import load_category_crud
 from flask_cors import CORS
 
 app = Flask(__name__)
