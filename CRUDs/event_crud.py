@@ -60,3 +60,33 @@ def load_event_crud(application, database):
 
         else:
             return 'Content-Type not supported!', 400
+
+    @app.route('/event', methods=['PUT'])  # update event
+    @login_module.login_required
+    def UpdateEvent():
+        if request.method == 'PUT':
+            content_type = request.headers.get('Content-Type')
+            if content_type == 'application/json':
+                json_data = request.get_json()
+                user_event = db.session.query(UserEventModel).filter_by(id=json_data["user_event_id"]).first()
+                if user_event:
+                    event = db.session.query(EventModel).filter_by(id=user_event.event_id).first()
+                    if event:
+                        event.start = datetime.strptime(json_data["start"], '%y/%m/%d %H:%M:%S')
+                        event.finish = datetime.strptime(json_data["finish"], '%y/%m/%d %H:%M:%S')
+                        event.title = json_data["title"]
+                        event.repeat = json_data["repeat"]
+                        event.description = json_data[
+                            "description"]
+                        # in this update event was connected to user_event, so if necessary
+                        # properties of user_event can also be modified
+                        db.session.commit()
+                        return "Event was successfully updated", 200
+                    else:
+                        return "Event not found", 400
+                else:
+                    return "User event not found", 400
+            else:
+                return "Wrong content type supplied, JSON expected", 400
+        else:
+            return "Wrong request", 400
