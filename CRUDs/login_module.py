@@ -18,7 +18,6 @@ def validate_login(login_field):
 
 def load_login_module(application, database):
     app = application
-    db = database
 
     bcryptor = Bcrypt(app)
 

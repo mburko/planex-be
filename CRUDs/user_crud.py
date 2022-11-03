@@ -1,9 +1,9 @@
-from flask import Flask, request, redirect, abort
+from flask import request, redirect
 from flask_bcrypt import Bcrypt
 
 from flask_json import FlaskJSON
 from Models.users import UserModel
-import login_module
+from CRUDs import login_module
 
 
 def load_user_crud(application, database):
@@ -49,7 +49,7 @@ def load_user_crud(application, database):
             }
             # return redirect(url_for('login'))
         else:
-            return 'Content-Type not supported!'
+            return 'Content-Type not supported!', 400
 
     @app.route('/info')  # Retrieve single user
     @login_module.login_required
