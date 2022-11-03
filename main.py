@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from login_module import load_login_module
 from user_crud import load_user_crud
-
+from category_crud import load_category_crud
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -19,4 +19,5 @@ CORS(app)
 if __name__ == "__main__":
     load_login_module(app, db)
     load_user_crud(app, db)
+    load_category_crud(app, db)
     app.run(debug=True)
