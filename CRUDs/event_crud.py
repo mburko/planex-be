@@ -115,4 +115,20 @@ def load_event_crud(application, database):
         else:
             return "Wrong request", 400
 
-
+    @app.route('/event', methods=['GET'])  # Get list of all events for user
+    @login_module.login_required
+    def GetAllEvents():
+        if request.method == 'GET':
+            user_event_lst = db.session.query(UserEventModel).filter_by(user_id=login_module.current_user.id).all()
+            if user_event_lst:
+                event_lst = []
+                for el in user_event_lst:
+                    event_lst.append(db.session.query(EventModel).filter_by(id=el.event_id).first())
+                if event_lst:
+                    return str(event_lst)
+                else:
+                    return "Events not found", 400
+            else:
+                return "User events not found", 400
+        else:
+            return "Wrong request", 400
