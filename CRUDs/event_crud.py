@@ -12,16 +12,6 @@ from Models.user_event import UserEventModel
 from datetime import datetime
 from dateutil.rrule import *
 
-'''
-to do:
-1) System creates unique event with param repeat. Get events from date1 to date2 will
-create using rrule lib list of actual dates and compare it to inputted dates ans show them.
-List will be created using interval in rrule for next year(maybe more) Optionally after date
-of original event was reached we can update starting date of original event so that we won't
-generate dates that are already passed.
-'''
-
-
 def load_event_crud(application, database):
     app = application
     db = database
