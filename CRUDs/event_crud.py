@@ -1,3 +1,6 @@
+import copy
+
+from dateutil.parser import parse
 from flask import request, redirect
 from flask_bcrypt import Bcrypt
 
@@ -8,6 +11,7 @@ from Models.event import EventModel
 from Models.user_event import UserEventModel
 
 from datetime import datetime
+from dateutil.rrule import *
 
 '''
 to do:
@@ -105,7 +109,7 @@ def load_event_crud(application, database):
                         db.session.delete(event)
                         db.session.commit()
 
-                        return "Event and User_event were successfully deleted", 200
+                        return "Event and User_event were successfully deleted", 204
                     else:
                         return "Event not found", 400
                 else:
@@ -130,5 +134,46 @@ def load_event_crud(application, database):
                     return "Events not found", 400
             else:
                 return "User events not found", 400
+        else:
+            return "Wrong request", 400
+
+    @app.route('/event/period', methods=['GET'])  # Get list of all events for user from particular date to another
+    @login_module.login_required
+    def GetAllEventsInTimePeriod():
+        if request.method == 'GET':
+            content_type = request.headers.get('Content-Type')
+            json_data = request.get_json()
+            if content_type == 'application/json':
+                user_event_lst = db.session.query(UserEventModel).filter_by(user_id=login_module.current_user.id).all()
+                if user_event_lst:
+                    event_lst = []
+                    for el in user_event_lst:
+                        temp = db.session.query(EventModel).filter_by(id=el.event_id).first()
+                        if temp.repeat:  # check if event is periodicall
+                            lst_cases = ["YEARLY", "MONTHLY", "WEEKLY"]
+                            if temp.repeat not in lst_cases:
+                                return "Wrong repeat value", 400
+                            all_dates = list(
+                                rrule(lst_cases.index(temp.repeat), dtstart=temp.start,
+                                      until=parse(json_data["finish_period"])))
+                            for el1 in all_dates:
+                                if parse(json_data["start_period"]) < el1 < parse(json_data["finish_period"]):
+                                    temp1 = copy.deepcopy(temp)
+                                    temp1.start = el1
+                                    temp1.finish = el1 + (temp1.finish - temp1.start)
+                                    event_lst.append(temp1)
+                        else:  # if it's not simply check time period and add it
+                            if parse(json_data["start_period"]) < temp.start < parse(json_data["finish_period"]):
+                                event_lst.append(temp)
+                            else:
+                                continue
+                    if event_lst:
+                        return str(event_lst), 200
+                    else:
+                        return "Events in this time period not found", 400
+                else:
+                    return "User events not found", 400
+            else:
+                return "Wrong content type supplied, JSON expected", 400
         else:
             return "Wrong request", 400
