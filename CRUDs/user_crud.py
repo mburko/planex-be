@@ -65,35 +65,32 @@ def load_user_crud(application, database):
     def update():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         content_type = request.headers.get('Content-Type')
-        if request.method == 'POST':
-            if content_type == 'application/json':
-                if user:
-                    json_data = request.get_json()
-                    user.login = json_data['login']
-                    user.password = json_data['password']
-                    user.username = json_data['username']
-                    user.email = json_data['email']
-                    user.team_working = json_data['team_working']
 
-                    db.session.commit()
-                    return redirect(f'/info')
-                else:
-                    return "User not found", 400
-            else:
-                return "Wrong content type supplied, JSON expected", 400
-        else:
-            return "Wrong request", 400
-
-    @app.route('/delete', methods=['DELETE'])  # delete user
-    @login_module.login_required
-    def delete():
-        user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
-        if request.method == 'DELETE':
+        if content_type == 'application/json':
             if user:
-                db.session.delete(user)
+                json_data = request.get_json()
+                user.login = json_data['login']
+                user.password = json_data['password']
+                user.username = json_data['username']
+                user.email = json_data['email']
+                user.team_working = json_data['team_working']
+
                 db.session.commit()
-                return redirect('/')
+                return redirect(f'/info')
             else:
                 return "User not found", 400
         else:
-            return "Wrong request", 400
+            return "Wrong content type supplied, JSON expected", 400
+
+
+@app.route('/delete', methods=['DELETE'])  # delete user
+@login_module.login_required
+def delete():
+    user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
+
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        return redirect('/')
+    else:
+        return "User not found", 400

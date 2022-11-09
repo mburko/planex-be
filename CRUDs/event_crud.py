@@ -12,6 +12,7 @@ from Models.user_event import UserEventModel
 from datetime import datetime
 from dateutil.rrule import *
 
+
 def load_event_crud(application, database):
     app = application
     db = database
@@ -22,12 +23,9 @@ def load_event_crud(application, database):
     @login_module.login_required
     def CreateEvent():
         content_type = request.headers.get('Content-Type')
-
         if content_type != 'application/json':
             return 'Content-Type not supported!', 400
-
         json_data = request.get_json()
-
         new_event = EventModel(
             start=datetime.strptime(json_data["start"], '%y/%m/%d %H:%M:%S'),  # example "20/01/01 12:12:12"
             finish=datetime.strptime(json_data["finish"], '%y/%m/%d %H:%M:%S'),
@@ -53,9 +51,6 @@ def load_event_crud(application, database):
     @app.route('/event', methods=['PUT'])  # update event
     @login_module.login_required
     def UpdateEvent():
-        if request.method != 'PUT':
-            return "Wrong request", 400
-
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
             return "Wrong content type supplied, JSON expected", 400
@@ -82,9 +77,6 @@ def load_event_crud(application, database):
     @app.route('/event', methods=['DELETE'])  # delete user
     @login_module.login_required
     def DeleteEvent():
-        if request.method != 'DELETE':
-            return "Wrong request", 400
-
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
             return "Wrong content type supplied, JSON expected", 400
@@ -107,9 +99,6 @@ def load_event_crud(application, database):
     @app.route('/event', methods=['GET'])  # Get list of all events for user
     @login_module.login_required
     def GetAllEvents():
-        if request.method != 'GET':
-            return "Wrong request", 400
-
         user_event_lst = db.session.query(UserEventModel).filter_by(user_id=login_module.current_user.id).all()
         if not user_event_lst:
             return "User events not found", 400
@@ -125,9 +114,6 @@ def load_event_crud(application, database):
     @app.route('/event/period', methods=['GET'])  # Get list of all events for user from particular date to another
     @login_module.login_required
     def GetAllEventsInTimePeriod():
-        if request.method != 'GET':
-            return "Wrong request", 400
-
         content_type = request.headers.get('Content-Type')
         json_data = request.get_json()
         if content_type != 'application/json':
