@@ -54,7 +54,8 @@ def load_login_module(application, database):
                 if user is not None:
                     if bcryptor.check_password_hash(user.password, json_data["password"]):
                         login_user(user)
-                        return redirect(url_for('user_page'))
+                        return "Ok", 200
+                        # return redirect(url_for('user_page'))
                     else:
                         return {
                             "Response": "Wrong pass"
