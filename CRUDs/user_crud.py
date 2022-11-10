@@ -45,7 +45,7 @@ def load_user_crud(application, database):
             db.session.add(new_user)
             db.session.commit()
             return {
-                "Response": "Registration successful (maybe redirect to login page)"
+                "Response": "Registration successful"
             }
             # return redirect(url_for('login'))
         else:
@@ -60,7 +60,7 @@ def load_user_crud(application, database):
         else:
             return "User not found", 400
 
-    @app.route('/info/update', methods=['POST'])  # update user
+    @app.route('/info/update', methods=['PUT'])  # update user
     @login_module.login_required
     def update():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
@@ -76,7 +76,7 @@ def load_user_crud(application, database):
                 user.team_working = json_data['team_working']
 
                 db.session.commit()
-                return redirect(f'/info')
+                return "User info successfully updated", 200
             else:
                 return "User not found", 400
         else:
@@ -91,6 +91,6 @@ def load_user_crud(application, database):
         if user:
             db.session.delete(user)
             db.session.commit()
-            return redirect('/')
+            return "User successfully deleted", 200
         else:
             return "User not found", 400
