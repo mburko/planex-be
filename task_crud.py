@@ -1,39 +1,35 @@
-from flask import request, redirect, url_for
-
-
+from flask import Flask, request, redirect, abort, url_for
 from flask_json import FlaskJSON
-
-from Models.category import CategoryModel, CategorySchema
+from Models.tasks import TaskModel, TaskSchema
 import login_module
 
 
-def load_category_crud(application, database):
+def load_task_crud(application, database):
     app = application
     db = database
 
     FlaskJSON(app)
 
-    @app.route('/category', methods=['POST'])  # Add category
+    @app.route('/task', methods=['POST'])
     @login_module.login_required
-    def create_category():
+    def create_task():
         content_type = request.headers.get('Content-Type')
         if content_type == 'application/json':
             json_data = request.get_json()
-            # print(json_data)
-            errors = CategorySchema().validate(data=json_data, session=db.session)
+            errors = TaskSchema().validate(data=json_data, session=db.session)
             if errors or json_data["user_id"] != login_module.current_user.id:
                 print(errors)
                 return {
                     "Response": "Missing or incorrect information"
                 }
-            existing_user_category = db.session.query(CategoryModel).filter_by(
+            existing_user_task = db.session.query(TaskModel).filter_by(
                     name=json_data['name'],
                     user_id=login_module.current_user.id).first()
-            if existing_user_category:
-                return redirect(url_for(f'/category/"{existing_user_category.id}"', method='GET'))
+            if existing_user_task:
+                return redirect(url_for(f'/task/"{existing_user_task.id}"', method='GET'))
             else:
-                new_category = CategorySchema().load(data=json_data, session=db.session)
-                db.session.add(new_category)
+                new_task = TaskSchema().load(data=json_data, session=db.session)
+                db.session.add(new_task)
                 db.session.commit()
                 return {
                     "Response": "Added successfully"
@@ -41,54 +37,52 @@ def load_category_crud(application, database):
         else:
             return 'Content-Type not supported!'
 
-    # retrieve all categories for current user
-    @app.route('/all_categories', methods=['GET'])  # Retrieve all categories
-    # for test purposes disabled auth
+    @app.route('/all_tasks', methods=['GET'])
     @login_module.login_required
     def retrieve_multiple_categories():
-        categories = db.session.query(CategoryModel).filter_by(
+        tasks = db.session.query(TaskModel).filter_by(
             user_id=login_module.current_user.id
         ).all()
-        print(categories)
-        if categories:
+        print(tasks)
+        if tasks:
             result = {}
-            result['categories']=[]
-            for cat in categories:
-                result['categories'].append(CategoryModel.info(cat))
+            result['tasks']=[]
+            for t in tasks:
+                result['tasks'].append(TaskModel.info(t))
             print(result)
-            return result  # str(categories)
+            return result
         else:
-            return "Category not found", 400
+            return "Task not found", 400
 
-    @app.route('/category/<category_id>', methods=['GET', 'PUT', 'DELETE'])  # RUD category
+    @app.route('/task/<task_id>', methods=['GET', 'PUT', 'DELETE'])
     @login_module.login_required
-    def rud_category(category_id):
-        request_cat_id = category_id
-        category = db.session.query(CategoryModel).filter_by(
+    def rud_category(task_id):
+        request_t_id = task_id
+        task = db.session.query(TaskModel).filter_by(
             user_id=login_module.current_user.id,
-            id=request_cat_id).first()
+            id=request_t_id).first()
         content_type = request.headers.get('Content-Type')
 
-        if category:
+        if task:
             if request.method == 'GET':
-                return CategoryModel.info(category), 200
+                return TaskModel.info(task), 200
             elif request.method == 'DELETE':
-                db.session.delete(category)
+                db.session.delete(task)
                 db.session.commit()
                 return 'ok', 200
             elif request.method == 'PUT':
                 if content_type == 'application/json':
                     json_data = request.get_json()
 
-                    errors = CategorySchema().validate(data=json_data,session= db)
+                    errors = TaskSchema().validate(data=json_data, session=db)
                     if errors:
                         return {
                             "Response": "Missing or incorrect information"
                         }
 
-                    db.session.query(CategoryModel).filter_by(
+                    db.session.query(TaskModel).filter_by(
                         user_id=login_module.current_user.id,
-                        id=request_cat_id).update(json_data)
+                        id=request_t_id).update(json_data)
 
                     db.session.commit()
                     return "Ok", 200
@@ -97,4 +91,4 @@ def load_category_crud(application, database):
             else:
                 return "Bad request", 400
         else:
-            return "Category not found", 400
+            return "Task not found", 400
