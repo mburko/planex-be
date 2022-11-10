@@ -4,6 +4,7 @@ from dateutil.parser import parse
 from flask import request, redirect
 
 from flask_json import FlaskJSON
+from flask_expects_json import expects_json
 
 from CRUDs import login_module
 from Models.event import EventModel
@@ -11,6 +12,33 @@ from Models.user_event import UserEventModel
 
 from datetime import datetime
 from dateutil.rrule import *
+
+event_post_expect = {
+    "type": "object",
+    "properties": {
+        "start": {"type": "string"},
+        "finish": {"type": "string"},
+        "title": {"type": "string"},
+        "repeat": {"type": "string"},
+        "description": {"type": "string"},
+    },
+    "required": ["start", "finish", "title", "repeat", "description"]
+
+}
+
+event_put_expect = {
+    "type": "object",
+    "properties": {
+        "user_event_id": {"type": "integer"},
+        "start": {"type": "string"},
+        "finish": {"type": "string"},
+        "title": {"type": "string"},
+        "repeat": {"type": "string"},
+        "description": {"type": "string"},
+    },
+    "required": ["start", "finish", "title", "repeat", "description"]
+
+}
 
 
 def load_event_crud(application, database):
@@ -21,11 +49,15 @@ def load_event_crud(application, database):
 
     @app.route('/event', methods=['POST'])  # Create single event
     @login_module.login_required
+    @expects_json(event_post_expect)
     def CreateEvent():
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
             return 'Content-Type not supported!', 400
         json_data = request.get_json()
+        if json_data['start'] > json_data['finish']:
+            return "Wrong start/finish values", 400
+
         new_event = EventModel(
             start=datetime.strptime(json_data["start"], '%y/%m/%d %H:%M:%S'),  # example "20/01/01 12:12:12"
             finish=datetime.strptime(json_data["finish"], '%y/%m/%d %H:%M:%S'),
@@ -50,6 +82,7 @@ def load_event_crud(application, database):
 
     @app.route('/event', methods=['PUT'])  # update event
     @login_module.login_required
+    @expects_json(event_put_expect)
     def UpdateEvent():
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':

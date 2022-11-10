@@ -83,14 +83,14 @@ def load_user_crud(application, database):
             return "Wrong content type supplied, JSON expected", 400
 
 
-@app.route('/delete', methods=['DELETE'])  # delete user
-@login_module.login_required
-def delete():
-    user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
+    @app.route('/delete', methods=['DELETE'])  # delete user
+    @login_module.login_required
+    def delete():
+        user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
 
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-        return redirect('/')
-    else:
-        return "User not found", 400
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            return redirect('/')
+        else:
+            return "User not found", 400
