@@ -1,8 +1,8 @@
 from flask import request, redirect, url_for
 
-
 from flask_json import FlaskJSON
 
+from Models.user_event import UserEventModel
 from Models.category import CategoryModel, CategorySchema
 from CRUDs import login_module
 
@@ -19,16 +19,15 @@ def load_category_crud(application, database):
         content_type = request.headers.get('Content-Type')
         if content_type == 'application/json':
             json_data = request.get_json()
-            # print(json_data)
             errors = CategorySchema().validate(data=json_data, session=db.session)
-            if errors or json_data["user_id"] != login_module.current_user.id:
+            if errors:
                 print(errors)
                 return {
                     "Response": "Missing or incorrect information"
                 }
             existing_user_category = db.session.query(CategoryModel).filter_by(
-                    name=json_data['name'],
-                    user_id=login_module.current_user.id).first()
+                name=json_data['name'],
+                description=json_data["description"]).first()
             if existing_user_category:
                 return redirect(url_for(f'/category/"{existing_user_category.id}"', method='GET'))
             else:
@@ -46,19 +45,33 @@ def load_category_crud(application, database):
     # for test purposes disabled auth
     @login_module.login_required
     def retrieve_multiple_categories():
-        categories = db.session.query(CategoryModel).filter_by(
+        user_events = db.session.query(UserEventModel).filter_by(
             user_id=login_module.current_user.id
         ).all()
-        print(categories)
-        if categories:
+        print(user_events)
+        if user_events:
             result = {}
-            result['categories']=[]
-            for cat in categories:
-                result['categories'].append(CategoryModel.info(cat))
-            print(result)
-            return result  # str(categories)
+            result['categories'] = []
+            for el in user_events:
+                if el.category_id:
+                    category = db.session.query(CategoryModel).filter_by(
+                        id=el.category_id
+                    ).first()
+                    result['categories'].append(CategoryModel.info(category))
+            return result
+
         else:
-            return "Category not found", 400
+            return "Categories not found", 400
+
+        # if categories:
+        #     result = {}
+        #     result['categories'] = []
+        #     for cat in categories:
+        #         result['categories'].append(CategoryModel.info(cat))
+        #     print(result)
+        #     return result  # str(categories)
+        # else:
+        #     return "Category not found", 400
 
     @app.route('/category/<category_id>', methods=['GET', 'PUT', 'DELETE'])  # RUD category
     @login_module.login_required
@@ -80,7 +93,7 @@ def load_category_crud(application, database):
                 if content_type == 'application/json':
                     json_data = request.get_json()
 
-                    errors = CategorySchema().validate(data=json_data,session= db)
+                    errors = CategorySchema().validate(data=json_data, session=db)
                     if errors:
                         return {
                             "Response": "Missing or incorrect information"

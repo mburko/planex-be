@@ -12,8 +12,7 @@ class CategoryModel(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.TEXT, nullable=True)
-    # -----------FK !-------------------
-    user_id = db.Column(db.Integer, nullable=False)
+
 
     # def __init__(self, name, description, user_id):
     #     self.name = name
