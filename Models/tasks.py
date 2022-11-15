@@ -43,4 +43,4 @@ class TaskSchema(Schema):
     time_to_do = fields.DateTime()
     repeat = fields.DateTime()
     event_id = fields.Integer()
-    user_id = fields.DateTime()
+    user_id = fields.Integer()
