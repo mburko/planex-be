@@ -36,9 +36,4 @@ class TaskModel(db.Model):
                      f' "user_id" : "{self.user_id}' + '}'
 
 
-class TaskSchema(SQLAlchemyAutoSchema):
-    class Meta:
-        model = TaskModel
-        include_relationships = True
-        include_fk = True
-        load_instance = True
+

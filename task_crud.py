@@ -1,7 +1,23 @@
 from flask import Flask, request, redirect, abort, url_for
 from flask_json import FlaskJSON
-from Models.tasks import TaskModel, TaskSchema
 import login_module
+import operator
+from Models.tasks import TaskModel
+from flask import Blueprint, request, jsonify
+from resp_error import errorss
+from marshmallow import Schema, validate, fields
+from marshmallow import ValidationError
+
+
+class TaskSchema(Schema):
+    id = fields.Integer()
+    title = fields.String()
+    description = fields.String()
+    deadline = fields.DateTime()
+    time_to_do = fields.DateTime()
+    repeat = fields.DateTime()
+    event_id = fields.DateTime()
+    user_id = fields.DateTime()
 
 
 def load_task_crud(application, database):
@@ -10,85 +26,66 @@ def load_task_crud(application, database):
 
     FlaskJSON(app)
 
+    def create_entry(model_class, *, commit=True, **kwargs):
+        entry = model_class(**kwargs)
+        db.session.add(entry)
+        if commit:
+            db.session.commit()
+        return entry
+
+    def update_entry(entry, *, commit=True, **kwargs):
+        for key, value in kwargs.items():
+            setattr(entry, key, value)
+        if commit:
+            db.session.commit()
+        return entry
+
     @app.route('/task', methods=['POST'])
     @login_module.login_required
     def create_task():
-        content_type = request.headers.get('Content-Type')
-        if content_type == 'application/json':
-            json_data = request.get_json()
-            errors = TaskSchema().validate(data=json_data, session=db.session)
-            if errors or json_data["user_id"] != login_module.current_user.id:
-                print(errors)
-                return {
-                    "Response": "Missing or incorrect information"
-                }
-            existing_user_task = db.session.query(TaskModel).filter_by(
-                    name=json_data['name'],
-                    user_id=login_module.current_user.id).first()
-            if existing_user_task:
-                return redirect(url_for(f'/task/"{existing_user_task.id}"', method='GET'))
-            else:
-                new_task = TaskSchema().load(data=json_data, session=db.session)
-                db.session.add(new_task)
-                db.session.commit()
-                return {
-                    "Response": "Added successfully"
-                }
-        else:
-            return 'Content-Type not supported!'
+        json_data = request.json
+        if not json_data:
+            return errorss.bad_request
+        try:
+            task_data = TaskSchema().load(json_data)
+        except ValidationError as err:
+            return err.messages, 422
+        user = db.session.query(TaskModel).filter_by(id=task_data["id"]).first()
+        if user:
+            return errorss.exists
+        user = create_entry(TaskModel, **task_data)
+        return jsonify(TaskSchema().dump(user)), 200
 
     @app.route('/all_tasks', methods=['GET'])
     @login_module.login_required
     def retrieve_multiple_categories():
-        tasks = db.session.query(TaskModel).filter_by(
-            user_id=login_module.current_user.id
-        ).all()
-        print(tasks)
-        if tasks:
-            result = {}
-            result['tasks']=[]
-            for t in tasks:
-                result['tasks'].append(TaskModel.info(t))
-            print(result)
-            return result
-        else:
-            return "Task not found", 400
+        tasks_list = db.session.query(TaskModel).all()
+        return TaskSchema().dump(tasks_list, many=True), 200
 
     @app.route('/task/<task_id>', methods=['GET', 'PUT', 'DELETE'])
     @login_module.login_required
-    def rud_category(task_id):
-        request_t_id = task_id
-        task = db.session.query(TaskModel).filter_by(
-            user_id=login_module.current_user.id,
-            id=request_t_id).first()
-        content_type = request.headers.get('Content-Type')
-
-        if task:
-            if request.method == 'GET':
-                return TaskModel.info(task), 200
-            elif request.method == 'DELETE':
-                db.session.delete(task)
-                db.session.commit()
-                return 'ok', 200
-            elif request.method == 'PUT':
-                if content_type == 'application/json':
-                    json_data = request.get_json()
-
-                    errors = TaskSchema().validate(data=json_data, session=db)
-                    if errors:
-                        return {
-                            "Response": "Missing or incorrect information"
-                        }
-
-                    db.session.query(TaskModel).filter_by(
-                        user_id=login_module.current_user.id,
-                        id=request_t_id).update(json_data)
-
-                    db.session.commit()
-                    return "Ok", 200
-                else:
-                    return "Wrong content type supplied, JSON expected", 400
-            else:
-                return "Bad request", 400
-        else:
-            return "Task not found", 400
+    def task_id_api(task_id):
+        task = db.session.query(TaskModel).filter_by(id=task_id).first()
+        if not task:
+            return errorss.not_found
+        if request.method == 'GET':
+            return TaskSchema().dump(task), 200
+        if request.method == 'PUT':
+            json_data = request.json
+            if not json_data:
+                return errorss.bad_request
+            try:
+                data = TaskSchema().load(json_data, partial=True)
+            except ValidationError as err:
+                return err.messages, 422
+            for key, value in data.items():
+                if key == "id":
+                    us = db.session.query(TaskModel).filter_by(id=data["id"]).first()
+                    if us:
+                        return errorss.exists
+            updated_task = update_entry(task, **data)
+            return TaskSchema().dump(updated_task), 200
+        if request.method == 'DELETE':
+            db.session.delete(task)
+            db.session.commit()
+            return {"message": "Deleted successfully"}, 200
