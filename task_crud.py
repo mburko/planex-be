@@ -48,7 +48,7 @@ def load_task_crud(application, database):
 
     @app.route('/all_tasks', methods=['GET'])
     @login_module.login_required
-    def retrieve_multiple_categories():
+    def retrieve_multiple_tasks():
         tasks_list = db.session.query(TaskModel).all()
         return TaskSchema().dump(tasks_list, many=True), 200
 

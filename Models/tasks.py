@@ -34,6 +34,7 @@ class TaskModel(db.Model):
                      f' "event_id" : "{self.event_id}",' \
                      f' "user_id" : "{self.user_id}' + '}'
 
+
 class TaskSchema(Schema):
     id = fields.Integer()
     title = fields.String()
@@ -41,5 +42,5 @@ class TaskSchema(Schema):
     deadline = fields.DateTime()
     time_to_do = fields.DateTime()
     repeat = fields.DateTime()
-    event_id = fields.DateTime()
+    event_id = fields.Integer()
     user_id = fields.DateTime()
