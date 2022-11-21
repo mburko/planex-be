@@ -21,18 +21,8 @@ class EventModel(db.Model, UserMixin):
         self.repeat = repeat
         self.description = description
 
-    # def __repr__(self):
-    #     return '{' + f' "id" : "{self.id}",' \
-    #                  f' "start" : "{self.start}",' \
-    #                  f' "finish" : "{self.finish}",' \
-    #                  f' "title" : "{self.title}",' \
-    #                  f' "repeat" : "{self.repeat}",' \
-    #                  f' "description" : {self.description}' + '}'
-
-
     def __repr__(self):
         return str(CategorySchema().dump(self))
-
 
     def info(self):
         return CategorySchema().dump(self)

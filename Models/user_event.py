@@ -17,11 +17,6 @@ class UserEventModel(db.Model, UserMixin):
         self.event_id = event_id
         self.category_id = category_id
 
-    # def __repr__(self):
-    #     return '{' + f' "id" : "{self.id}",' \
-    #                  f' "user_id" : "{self.user_id}",' \
-    #                  f' "event_id" : "{self.event_id}",' \
-    #                  f' "category_id" : "{self.category_id}",' + '}'
 
     def __repr__(self):
         return str(CategorySchema().dump(self))

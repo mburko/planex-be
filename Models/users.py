@@ -21,13 +21,6 @@ class UserModel(db.Model, UserMixin):
         self.email = email
         self.team_working = team_working
 
-    # def __repr__(self):
-    #     return '{' + f' "id" : "{self.id}",' \
-    #                  f' "login" : "{self.login}",' \
-    #                  f' "password" : "{self.password}",' \
-    #                  f' "username" : "{self.username}",' \
-    #                  f' "email" : "{self.email}",' \
-    #                  f' "team_working" : {self.team_working}' + '}'
     def __repr__(self):
         return str(CategorySchema().dump(self))
 
