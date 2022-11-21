@@ -30,12 +30,12 @@ class EventModel(db.Model, UserMixin):
     #                  f' "description" : {self.description}' + '}'
 
 
-def __repr__(self):
-    return str(CategorySchema().dump(self))
+    def __repr__(self):
+        return str(CategorySchema().dump(self))
 
 
-def info(self):
-    return CategorySchema().dump(self)
+    def info(self):
+        return CategorySchema().dump(self)
 
 
 class CategorySchema(SQLAlchemyAutoSchema):

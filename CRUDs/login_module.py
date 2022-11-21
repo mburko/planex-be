@@ -55,7 +55,7 @@ def load_login_module(application, database):
                 if user is not None:
                     if bcryptor.check_password_hash(user.password, json_data["password"]):
                         login_user(user)
-                        return "Ok", 200
+                        return {"Response": "Successful"}, 200
                         # return redirect(url_for('user_page'))
                     else:
                         return {
@@ -74,16 +74,16 @@ def load_login_module(application, database):
 
         t = current_user.username
         return {
-            "Response": "Welcome to User page, " + t
-        }, 200
+                   "Response": "Welcome to User page, " + t
+               }, 200
 
     @app.route('/logout', methods=['GET'])
     @login_required
     def logout():
         logout_user()
         return {
-            "Response": "Log out"
-        }, 200
+                   "Response": "Successful log out"
+               }, 200
 
 
 # **********************************************************************************

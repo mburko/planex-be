@@ -2,6 +2,8 @@ from flask import request, redirect
 from flask_bcrypt import Bcrypt
 
 from flask_json import FlaskJSON
+
+
 from Models.users import UserModel
 from CRUDs import login_module
 
@@ -14,7 +16,7 @@ def load_user_crud(application, database):
 
     FlaskJSON(app)
 
-    @app.route('/register', methods=['POST'])
+    @app.route('/user/register', methods=['POST'])
     def register():
         content_type = request.headers.get('Content-Type')
         if content_type == 'application/json':
@@ -51,16 +53,16 @@ def load_user_crud(application, database):
         else:
             return {"Response": "Content-Type not supported!"}, 400
 
-    @app.route('/info')  # Retrieve single user
+    @app.route('/user')  # Retrieve single user
     @login_module.login_required
     def RetrieveSingleUser():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         if user:
-            return str(user)
+            return UserModel.info(user), 200
         else:
             return {"Response": "User not found"}, 400
 
-    @app.route('/info/update', methods=['PUT'])  # update user
+    @app.route('/user', methods=['PUT'])  # update user
     @login_module.login_required
     def update():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
@@ -82,7 +84,7 @@ def load_user_crud(application, database):
         else:
             return {"Response": "Wrong content type supplied, JSON expected"}, 400
 
-    @app.route('/delete', methods=['DELETE'])  # delete user
+    @app.route('/user', methods=['DELETE'])  # delete user
     @login_module.login_required
     def delete():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()

@@ -64,12 +64,11 @@ def load_category_crud(application, database):
                        "Response": "Categories not found"
                    }, 400
 
-    @app.route('/category/<category_id>', methods=['GET', 'PUT', 'DELETE'])  # RUD category
+    @app.route('/category/<int:category_id>', methods=['GET', 'PUT', 'DELETE'])  # RUD category
     @login_module.login_required
     def rud_category(category_id):
         request_cat_id = category_id
         category = db.session.query(CategoryModel).filter_by(
-            user_id=login_module.current_user.id,
             id=request_cat_id).first()
         content_type = request.headers.get('Content-Type')
         if category:
@@ -89,7 +88,6 @@ def load_category_crud(application, database):
                                }, 400
 
                     db.session.query(CategoryModel).filter_by(
-                        user_id=login_module.current_user.id,
                         id=request_cat_id).update(json_data)
 
                     db.session.commit()
