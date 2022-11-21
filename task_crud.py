@@ -15,15 +15,13 @@ def load_task_crud(application, database):
     def create_entry(model_class, *, commit=True, **kwargs):
         entry = model_class(**kwargs)
         db.session.add(entry)
-        if commit:
-            db.session.commit()
+        db.session.commit()
         return entry
 
     def update_entry(entry, *, commit=True, **kwargs):
         for key, value in kwargs.items():
             setattr(entry, key, value)
-        if commit:
-            db.session.commit()
+        db.session.commit()
         return entry
 
     @app.route('/task', methods=['POST'])
@@ -38,7 +36,7 @@ def load_task_crud(application, database):
                 task_data = TaskSchema().load(json_data)
             except ValidationError as err:
                 return err.messages, 422
-            task = db.session.query(TaskModel).filter_by(id=task_data["id"]).first()
+            task = db.session.query(TaskModel).filter_by(id=task_data["id"], user_id=login_module.current_user.id).first()
             if task:
                 return errorss.exists
             task = create_entry(TaskModel, **task_data)
@@ -49,13 +47,16 @@ def load_task_crud(application, database):
     @app.route('/all_tasks', methods=['GET'])
     @login_module.login_required
     def retrieve_multiple_tasks():
-        tasks_list = db.session.query(TaskModel).all()
-        return TaskSchema().dump(tasks_list, many=True), 200
+        tasks_list = db.session.query(TaskModel).filter_by(user_id=login_module.current_user.id).all()
+        if not tasks_list:
+            return errorss.not_found
+        else:
+            return TaskSchema().dump(tasks_list, many=True), 200
 
     @app.route('/task/<task_id>', methods=['GET', 'PUT', 'DELETE'])
     @login_module.login_required
     def task_id_api(task_id):
-        task = db.session.query(TaskModel).filter_by(id=task_id).first()
+        task = db.session.query(TaskModel).filter_by(id=task_id, user_id=login_module.current_user.id).first()
         if not task:
             return errorss.not_found
         if request.method == 'GET':
@@ -70,9 +71,9 @@ def load_task_crud(application, database):
                 return err.messages, 422
             for key, value in data.items():
                 if key == "id":
-                    us = db.session.query(TaskModel).filter_by(id=data["id"]).first()
-                    if us:
-                        return errorss.exists
+                    us = db.session.query(TaskModel).filter_by(id=data["user_id"]).first()
+                    if not us:
+                        return errorss.not_found
             updated_task = update_entry(task, **data)
             return TaskSchema().dump(updated_task), 200
         if request.method == 'DELETE':
