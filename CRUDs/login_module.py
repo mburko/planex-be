@@ -16,6 +16,7 @@ def validate_login(login_field):
         return False
     return True
 
+
 def load_login_module(application, database):
     app = application
 
@@ -33,8 +34,8 @@ def load_login_module(application, database):
     @app.route('/')
     def home():
         return {
-            "Response": "Home page"
-        }
+                   "Response": "Home page"
+               }, 200
 
     @app.route('/login', methods=['POST'])
     def login():
@@ -47,8 +48,8 @@ def load_login_module(application, database):
                     not json_data["login"] \
                             or not json_data["password"]:
                 return {
-                    "Response": "Missing information"
-                }
+                           "Response": "Missing information"
+                       }, 400
             else:
                 user = UserModel.query.filter_by(login=json_data["login"]).first()
                 if user is not None:
@@ -58,14 +59,14 @@ def load_login_module(application, database):
                         # return redirect(url_for('user_page'))
                     else:
                         return {
-                            "Response": "Wrong pass"
-                        }
+                                   "Response": "Wrong pass"
+                               }, 400
                 else:
                     return {
-                        "Response": "No user"
-                    }
+                               "Response": "No user"
+                           }, 400
         else:
-            return 'Content-Type not supported!'
+            return {"Response": "Content-Type not supported!"}, 400
 
     @app.route('/user_page', methods=['GET'])
     @login_required
@@ -74,7 +75,7 @@ def load_login_module(application, database):
         t = current_user.username
         return {
             "Response": "Welcome to User page, " + t
-        }
+        }, 200
 
     @app.route('/logout', methods=['GET'])
     @login_required
@@ -82,9 +83,7 @@ def load_login_module(application, database):
         logout_user()
         return {
             "Response": "Log out"
-        }
-
-
+        }, 200
 
 
 # **********************************************************************************

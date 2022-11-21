@@ -30,12 +30,12 @@ def load_user_crud(application, database):
                             or "username" not in json_data \
                             or not json_data["username"]:
                 return {
-                    "Response": "Missing information"
-                }
+                           "Response": "Missing information"
+                       }, 400
             if not login_module.validate_login(json_data["login"]):
                 return {
-                    "Response": "User already exists"
-                }
+                           "Response": "User already exists"
+                       }, 400
             hashed_password = bcryptor.generate_password_hash(json_data['password'])
             new_user = UserModel(login=json_data["login"],
                                  password=hashed_password,
@@ -45,11 +45,11 @@ def load_user_crud(application, database):
             db.session.add(new_user)
             db.session.commit()
             return {
-                "Response": "Registration successful"
-            }
+                       "Response": "Registration successful"
+                   }, 200
             # return redirect(url_for('login'))
         else:
-            return 'Content-Type not supported!', 400
+            return {"Response": "Content-Type not supported!"}, 400
 
     @app.route('/info')  # Retrieve single user
     @login_module.login_required
@@ -58,7 +58,7 @@ def load_user_crud(application, database):
         if user:
             return str(user)
         else:
-            return "User not found", 400
+            return {"Response": "User not found"}, 400
 
     @app.route('/info/update', methods=['PUT'])  # update user
     @login_module.login_required
@@ -76,21 +76,19 @@ def load_user_crud(application, database):
                 user.team_working = json_data['team_working']
 
                 db.session.commit()
-                return "User info successfully updated", 200
+                return {"Response": "User info successfully updated"}, 200
             else:
-                return "User not found", 400
+                return {"Response": "User not found"}, 400
         else:
-            return "Wrong content type supplied, JSON expected", 400
-
+            return {"Response": "Wrong content type supplied, JSON expected"}, 400
 
     @app.route('/delete', methods=['DELETE'])  # delete user
     @login_module.login_required
     def delete():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
-
         if user:
             db.session.delete(user)
             db.session.commit()
-            return "User successfully deleted", 200
+            return {"Response": "User successfully deleted"}, 200
         else:
-            return "User not found", 400
+            return {"Response": "User not found"}, 400

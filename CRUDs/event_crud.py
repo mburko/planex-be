@@ -4,42 +4,13 @@ from dateutil.parser import parse
 from flask import request, redirect
 
 from flask_json import FlaskJSON
-from flask_expects_json import expects_json
 
 from CRUDs import login_module
-from Models.event import EventModel
+from Models.event import EventModel, CategorySchema
 from Models.user_event import UserEventModel
 
 from datetime import datetime
 from dateutil.rrule import *
-
-event_post_expect = {
-    "type": "object",
-    "properties": {
-        "start": {"type": "string"},
-        "finish": {"type": "string"},
-        "title": {"type": "string"},
-        "repeat": {"type": "string"},
-        "description": {"type": "string"},
-    },
-    "required": ["start", "finish", "title", "repeat", "description"]
-
-}
-
-event_put_expect = {
-    "type": "object",
-    "properties": {
-        "user_event_id": {"type": "integer"},
-        "start": {"type": "string"},
-        "finish": {"type": "string"},
-        "title": {"type": "string"},
-        "repeat": {"type": "string"},
-        "description": {"type": "string"},
-    },
-    "required": ["start", "finish", "title", "repeat", "description"]
-
-}
-
 
 def load_event_crud(application, database):
     app = application
@@ -49,14 +20,19 @@ def load_event_crud(application, database):
 
     @app.route('/event', methods=['POST'])  # Create single event
     @login_module.login_required
-    @expects_json(event_post_expect)
     def CreateEvent():
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
-            return 'Content-Type not supported!', 400
+            return {"Response": "Content-Type not supported!"}, 400
         json_data = request.get_json()
+        errors = CategorySchema().validate(data=json_data, session=db)
+        if errors:
+            return {
+                       "Response": "Missing or incorrect information"
+                   }, 400
+
         if json_data['start'] > json_data['finish']:
-            return "Wrong start/finish values", 400
+            return {"Response": "Wrong start/finish values"}, 400
 
         new_event = EventModel(
             start=datetime.strptime(json_data["start"], '%y/%m/%d %H:%M:%S'),  # example "20/01/01 12:12:12"
@@ -78,24 +54,28 @@ def load_event_crud(application, database):
         db.session.add(new_user_event)
         db.session.commit()
 
-        return "Event and UserEvent were successfully added", 200
+        return {"Response": "Event and UserEvent were successfully added"}, 200
 
     @app.route('/event', methods=['PUT'])  # update event
     @login_module.login_required
-    @expects_json(event_put_expect)
     def UpdateEvent():
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
-            return "Wrong content type supplied, JSON expected", 400
+            return {"Response": "Wrong content type supplied, JSON expected"}, 400
 
         json_data = request.get_json()
+        errors = CategorySchema().validate(data=json_data, session=db)
+        if errors:
+            return {
+                       "Response": "Missing or incorrect information"
+                   }, 400
         user_event = db.session.query(UserEventModel).filter_by(id=json_data["user_event_id"]).first()
         if not user_event:
-            return "User event not found", 400
+            return {"Response": "User event not found"}, 400
 
         event = db.session.query(EventModel).filter_by(id=user_event.event_id).first()
         if not event:
-            return "Event not found", 400
+            return {"Response": "Event not found"}, 400
 
         event.start = datetime.strptime(json_data["start"], '%y/%m/%d %H:%M:%S')
         event.finish = datetime.strptime(json_data["finish"], '%y/%m/%d %H:%M:%S')
@@ -105,42 +85,46 @@ def load_event_crud(application, database):
         # in this update event was connected to user_event, so if necessary
         # properties of user_event can also be modified
         db.session.commit()
-        return "Event was successfully updated", 200
+        return {"Response": "Event was successfully updated"}, 200
 
     @app.route('/event', methods=['DELETE'])  # delete user
     @login_module.login_required
     def DeleteEvent():
         content_type = request.headers.get('Content-Type')
         if content_type != 'application/json':
-            return "Wrong content type supplied, JSON expected", 400
+            return {"Response": "Wrong content type supplied, JSON expected"}, 400
 
         json_data = request.get_json()
+        errors = CategorySchema().validate(data=json_data, session=db)
+        if errors:
+            return {
+                       "Response": "Missing or incorrect information"
+                   }, 400
         user_event = db.session.query(UserEventModel).filter_by(id=json_data["user_event_id"]).first()
         if not user_event:
-            return "User event not found", 400
+            return {"Response": "User event not found"}, 400
 
         event = db.session.query(EventModel).filter_by(id=user_event.event_id).first()
         if not event:
-            return "Event not found", 400
+            return {"Response": "Event not found"}, 400
 
         db.session.delete(user_event)
         db.session.delete(event)
         db.session.commit()
 
-        return "Event and User_event were successfully deleted", 204
+        return {"Response": "Event and User_event were successfully deleted"}, 204
 
     @app.route('/event', methods=['GET'])  # Get list of all events for user
     @login_module.login_required
     def GetAllEvents():
         user_event_lst = db.session.query(UserEventModel).filter_by(user_id=login_module.current_user.id).all()
         if not user_event_lst:
-            return "User events not found", 400
-
+            return {"Response": "User events not found"}, 400
         event_lst = []
         for el in user_event_lst:
             event_lst.append(db.session.query(EventModel).filter_by(id=el.event_id).first())
         if not event_lst:
-            return "Events not found", 400
+            return {"Response": "Events not found"}, 400
 
         return str(event_lst)
 
@@ -149,12 +133,19 @@ def load_event_crud(application, database):
     def GetAllEventsInTimePeriod():
         content_type = request.headers.get('Content-Type')
         json_data = request.get_json()
+        errors = CategorySchema().validate(data=json_data, session=db)
+
+        if errors:
+            return {
+                       "Response": "Missing or incorrect information"
+                   }, 400
+
         if content_type != 'application/json':
-            return "Wrong content type supplied, JSON expected", 400
+            return {"Response": "Wrong content type supplied, JSON expected"}, 400
 
         user_event_lst = db.session.query(UserEventModel).filter_by(user_id=login_module.current_user.id).all()
         if not user_event_lst:
-            return "User events not found", 400
+            return {"Response": "User events not found"}, 400
 
         event_lst = []
         for el in user_event_lst:
@@ -162,7 +153,7 @@ def load_event_crud(application, database):
             if temp.repeat:  # check if event is periodicall
                 lst_cases = ["YEARLY", "MONTHLY", "WEEKLY"]
                 if temp.repeat not in lst_cases:
-                    return "Wrong repeat value", 400
+                    return {"Response": "Wrong repeat value"}, 400
                 all_dates = list(
                     rrule(lst_cases.index(temp.repeat), dtstart=temp.start,
                           until=parse(json_data["finish_period"])))
@@ -176,6 +167,6 @@ def load_event_crud(application, database):
                 if parse(json_data["start_period"]) < temp.start < parse(json_data["finish_period"]):
                     event_lst.append(temp)
         if not event_lst:
-            return "Events in this time period not found", 400
+            return {"Response": "Events in this time period not found"}, 400
 
         return str(event_lst), 200
