@@ -10,7 +10,6 @@ from CRUDs import login_module
 def load_category_crud(application, database):
     app = application
     db = database
-
     FlaskJSON(app)
 
     @app.route('/category', methods=['POST'])  # Add category
