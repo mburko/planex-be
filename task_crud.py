@@ -13,17 +13,6 @@ def load_task_crud(application, database):
 
     FlaskJSON(app)
 
-    def create_entry(model_class, *, commit=True, **kwargs):
-        entry = model_class(**kwargs)
-        db.session.add(entry)
-        db.session.commit()
-        return entry
-
-    def update_entry(entry, *, commit=True, **kwargs):
-        for key, value in kwargs.items():
-            setattr(entry, key, value)
-        db.session.commit()
-        return entry
 
     @app.route('/task', methods=['POST'])
     @login_module.login_required
