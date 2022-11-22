@@ -52,11 +52,13 @@ def load_tomorrow_events(user_id):
 
 def load_tomorrow_tasks(user_id):
     all_tasks = db.session.query(TaskModel).filter_by(user_id=user_id).all()
+    print(all_tasks)
     task_lst = []
     if all_tasks:
         for el in all_tasks:
             tomorrow = datetime.now() + timedelta(days=1)
-            if el.deadline.date == tomorrow.date():
+            print(tomorrow.date(), el.deadline.date())
+            if el.deadline.date() == tomorrow.date():
                 task_lst.append(el)
     return task_lst
 
@@ -88,7 +90,7 @@ def current_notification(user):
         if ev.description:
             mail_body += f"\t{ev.description}\n"
         i += 1
-    send_mail(recepient_mail=user.email, subject='Next events', body=mail_body)
+    send_mail(recipient_mail=user.email, subject='Next events', body=mail_body)
 
 
 def tomorrow_notifications(user):
@@ -116,7 +118,7 @@ def tomorrow_notifications(user):
                 if el.description:
                     mail_body += f"\t{el.description}\n"
                 i += 1
-    send_mail(recepient_mail=user.email, subject='Tomorrow routine', body=mail_body)
+    send_mail(recipient_mail=user.email, subject='Tomorrow routine', body=mail_body)
 
 
 if __name__ == '__main__':
