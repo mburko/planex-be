@@ -1,9 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import Schema, fields
+from flask_login import UserMixin
 db = SQLAlchemy()
 
 
-class TaskModel(db.Model):
+class TaskModel(db.Model, UserMixin):
     __tablename__ = "Task"
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(20), nullable=False)
@@ -25,14 +26,10 @@ class TaskModel(db.Model):
         self.user_id = user_id
 
     def __repr__(self):
-        return '{' + f' "id" : "{self.id}",' \
-                     f' "title" : "{self.title}",' \
-                     f' "description" : "{self.description}",' \
-                     f' "deadline" : "{self.deadline}",' \
-                     f' "time_to_do" : "{self.time_to_do}",' \
-                     f' "repeat" : "{self.repeat}",' \
-                     f' "priority" : "{self.priority}",' \
-                     f' "user_id" : "{self.user_id}' + '}'
+        return str(TaskSchema().dump(self))
+
+    def info(self):
+        return TaskSchema().dump(self)
 
 
 class TaskSchema(Schema):
