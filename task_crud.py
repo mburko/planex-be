@@ -4,6 +4,7 @@ from Models.tasks import TaskModel, TaskSchema
 from flask import request, jsonify
 from resp_error import errorss
 from marshmallow import ValidationError
+from flask import request, redirect, url_for
 
 
 def load_task_crud(application, database):
@@ -32,14 +33,16 @@ def load_task_crud(application, database):
             json_data = request.json
             if not json_data:
                 return errorss.bad_request
-            try:
-                task_data = TaskSchema().load(json_data)
-            except ValidationError as err:
-                return err.messages, 422
-            task = db.session.query(TaskModel).filter_by(id=task_data["id"], user_id=login_module.current_user.id).first()
-            if task:
-                return errorss.exists
-            task = create_entry(TaskModel, **task_data)
+            json_data["user_id"] = login_module.current_user.id
+            errors = TaskSchema().validate(data=json_data, session=db.session)
+            if errors:
+                print(errors)
+                return {
+                    "Response": "Missing or incorrect information"
+                }
+            task = TaskSchema().load(data=json_data, session=db.session)
+            db.session.add(task)
+            db.session.commit()
             return jsonify(TaskSchema().dump(task)), 200
         else:
             return errorss.not_supported
@@ -62,20 +65,21 @@ def load_task_crud(application, database):
         if request.method == 'GET':
             return TaskSchema().dump(task), 200
         if request.method == 'PUT':
-            json_data = request.json
-            if not json_data:
+            content_type = request.headers.get('Content-Type')
+            if content_type == 'application/json':
+                json_data = request.json
+                if not json_data:
+                    return errorss.bad_request
+                errors = TaskSchema().validate(data=json_data, session=db)
+                if errors:
+                    return {
+                        "Response": "Missing or incorrect information"
+                    }
+                updated_task = db.session.query(TaskModel).filter_by(
+                    user_id=login_module.current_user.id).update(json_data)
+                return TaskSchema().dump(updated_task), 200
+            else:
                 return errorss.bad_request
-            try:
-                data = TaskSchema().load(json_data, partial=True)
-            except ValidationError as err:
-                return err.messages, 422
-            for key, value in data.items():
-                if key == "id":
-                    us = db.session.query(TaskModel).filter_by(id=data["user_id"]).first()
-                    if not us:
-                        return errorss.not_found
-            updated_task = update_entry(task, **data)
-            return TaskSchema().dump(updated_task), 200
         if request.method == 'DELETE':
             db.session.delete(task)
             db.session.commit()
