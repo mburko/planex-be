@@ -39,6 +39,10 @@ def load_task_crud(application, database):
                 return {
                     "Response": "Missing or incorrect information"
                 }
+            if json_data['priority'] not in ['High', 'Middle', 'Low']:
+                return {
+                    "Response": "Missing or incorrect information"
+                }
             task = TaskSchema().load(data=json_data, session=db.session)
             db.session.add(task)
             db.session.commit()
@@ -71,6 +75,10 @@ def load_task_crud(application, database):
                     return errorss.bad_request
                 errors = TaskSchema().validate(data=json_data, session=db)
                 if errors:
+                    return {
+                        "Response": "Missing or incorrect information"
+                    }
+                if json_data['priority'] not in ['High', 'Middle', 'Low']:
                     return {
                         "Response": "Missing or incorrect information"
                     }
