@@ -22,13 +22,13 @@ class UserModel(db.Model, UserMixin):
         self.team_working = team_working
 
     def __repr__(self):
-        return str(CategorySchema().dump(self))
+        return str(UserSchema().dump(self))
 
     def info(self):
-        return CategorySchema().dump(self)
+        return UserSchema().dump(self)
 
 
-class CategorySchema(SQLAlchemyAutoSchema):
+class UserSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = UserModel
         include_fk = True

@@ -22,13 +22,13 @@ class EventModel(db.Model, UserMixin):
         self.description = description
 
     def __repr__(self):
-        return str(CategorySchema().dump(self))
+        return str(EventSchema().dump(self))
 
     def info(self):
-        return CategorySchema().dump(self)
+        return EventSchema().dump(self)
 
 
-class CategorySchema(SQLAlchemyAutoSchema):
+class EventSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = EventModel
         include_fk = True

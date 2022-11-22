@@ -7,7 +7,7 @@ from flask_json import FlaskJSON
 
 from CRUDs import login_module
 from Models.category import CategoryModel
-from Models.event import EventModel, CategorySchema
+from Models.event import EventModel, EventSchema
 from Models.user_event import UserEventModel
 
 from datetime import datetime
@@ -39,7 +39,7 @@ def load_event_crud(application, database):
             return {"Response": "Missing or incorrect information"}, 400
         del json_data["category_id"]
 
-        errors = CategorySchema().validate(data=json_data, session=db)
+        errors = EventSchema().validate(data=json_data, session=db)
         print(errors)
         if errors:
             return {
@@ -84,7 +84,7 @@ def load_event_crud(application, database):
         if content_type != 'application/json':
             return {"Response": "Wrong content type supplied, JSON expected"}, 400
         json_data = request.get_json()
-        errors = CategorySchema().validate(data=json_data, session=db)
+        errors = EventSchema().validate(data=json_data, session=db)
         if errors:
             return {
                        "Response": "Missing or incorrect information"

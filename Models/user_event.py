@@ -17,15 +17,14 @@ class UserEventModel(db.Model, UserMixin):
         self.event_id = event_id
         self.category_id = category_id
 
-
     def __repr__(self):
-        return str(CategorySchema().dump(self))
+        return str(UserEventSchema().dump(self))
 
     def info(self):
-        return CategorySchema().dump(self)
+        return UserEventSchema().dump(self)
 
 
-class CategorySchema(SQLAlchemyAutoSchema):
+class UserEventSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = UserEventModel
         include_fk = True
