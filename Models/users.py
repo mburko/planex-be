@@ -1,5 +1,6 @@
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 db = SQLAlchemy()
 
@@ -21,9 +22,14 @@ class UserModel(db.Model, UserMixin):
         self.team_working = team_working
 
     def __repr__(self):
-        return '{' + f' "id" : "{self.id}",' \
-                     f' "login" : "{self.login}",' \
-                     f' "password" : "{self.password}",' \
-                     f' "username" : "{self.username}",' \
-                     f' "email" : "{self.email}",' \
-                     f' "team_working" : {self.team_working}' + '}'
+        return str(UserSchema().dump(self))
+
+    def info(self):
+        return UserSchema().dump(self)
+
+
+class UserSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = UserModel
+        include_fk = True
+        load_instance = True
