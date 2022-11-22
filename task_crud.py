@@ -84,7 +84,7 @@ def load_task_crud(application, database):
             db.session.commit()
             return {"message": "Deleted successfully"}, 200
 
-    @app.route('/task/date', methods=['GET'])  # Get list of all events for user from particular date to another
+    @app.route('/task/date', methods=['GET'])  # Get list of all tasks for user for particular date
     @login_module.login_required
     def GetAllTasksForDate():
         content_type = request.headers.get('Content-Type')
@@ -96,7 +96,7 @@ def load_task_crud(application, database):
         if 'target_date' not in json_data or not json_data['target_date']:
             return {"Response": "Missing or incorrect information"}, 400
         json_data["target_date"] = str((json_data["target_date"])[2:])
-        target_date = datetime.strptime(json_data["target_date"], '%y-%m-%dT%H:%M:%S'),  # example "20/01/01 12:12:12"
+        target_date = datetime.strptime(json_data["target_date"], '%y-%m-%dT%H:%M:%S'),  # request example { "target_date":"2022-11-23T00:00:00"}
         target_date = target_date[0]
 
         task_lst = db.session.query(TaskModel).filter_by(user_id=login_module.current_user.id) \
