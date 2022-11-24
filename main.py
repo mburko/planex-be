@@ -7,6 +7,7 @@ from CRUDs.category_crud import load_category_crud
 from CRUDs.event_crud import load_event_crud
 from flask_cors import CORS
 
+from task_crud import load_task_crud
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/planex.db'
@@ -22,4 +23,5 @@ if __name__ == "__main__":
     load_user_crud(app, db)
     load_category_crud(app, db)
     load_event_crud(app, db)
+    load_task_crud(app, db)
     app.run(debug=True)
