@@ -93,7 +93,7 @@ def load_task_crud(application, database):
             return {"message": "Deleted successfully"}, 200
 
     @app.route('/task/date', methods=['GET'])  # Get list of all tasks for user for particular date
-    #@login_module.login_required
+    @login_module.login_required
     def GetAllTasksForDate():
         content_type = request.headers.get('Content-Type')
         json_data = request.get_json()
@@ -108,8 +108,7 @@ def load_task_crud(application, database):
                                         '%y-%m-%dT%H:%M:%S'),  # request example { "target_date":"2022-11-23T00:00:00"}
         target_date = target_date[0]
 
-        # task_lst = db.session.query(TaskModel).filter_by(user_id=login_module.current_user.id) \
-        task_lst = db.session.query(TaskModel).filter_by(user_id=14) \
+        task_lst = db.session.query(TaskModel).filter_by(user_id=login_module.current_user.id) \
             .filter(and_(TaskModel.deadline >= target_date,
                          TaskModel.deadline < (target_date + timedelta(days=1)))
                     ).all()
