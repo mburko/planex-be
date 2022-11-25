@@ -9,6 +9,7 @@ from CRUDs.task_crud import load_task_crud
 
 from flask_cors import CORS
 
+from task_crud import load_task_crud
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/planex.db'
