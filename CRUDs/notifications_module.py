@@ -5,29 +5,23 @@ from Models.event import EventModel
 from Models.user_event import UserEventModel
 from Models.tasks import TaskModel
 
-from datetime import datetime, timedelta
+from CRUDs.task_crud import migrate_tasks
 
+from datetime import datetime, timedelta
+from time import sleep
+
+from threading import Thread
 
 # to do: change this import
-from main import db
-from main import app
-
-# def load_notification_module(app, db):
-
-app.config['MAIL_SERVER'] = 'smtp.mailtrap.io'
-app.config['MAIL_PORT'] = 2525
-app.config['MAIL_USERNAME'] = '8190f37066adef'
-app.config['MAIL_PASSWORD'] = 'ca2237b79a9cc0'
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-
-TIME_REVISION = 30  # minutes
+# from main import db
+# from main import app
 
 
-mail_sender = Mail(app)
+TIME_REVISION = 13  # 30  # minutes
+MIDNIGHT_MAIL = datetime.strptime('00:00', '%H:%M')
 
 
-def load_current_events(user_id):
+def load_current_events(user_id, db):
     user_event_lst = db.session.query(UserEventModel).filter_by(user_id=user_id).all()
     event_lst = []
     if user_event_lst:
@@ -38,7 +32,7 @@ def load_current_events(user_id):
     return event_lst
 
 
-def load_tomorrow_events(user_id):
+def load_tomorrow_events(user_id, db):
     user_event_lst = db.session.query(UserEventModel).filter_by(user_id=user_id).all()
     event_lst = []
     if user_event_lst:
@@ -50,7 +44,7 @@ def load_tomorrow_events(user_id):
     return event_lst
 
 
-def load_tomorrow_tasks(user_id):
+def load_tomorrow_tasks(user_id, db):
     all_tasks = db.session.query(TaskModel).filter_by(user_id=user_id).all()
     print(all_tasks)
     task_lst = []
@@ -63,39 +57,40 @@ def load_tomorrow_tasks(user_id):
     return task_lst
 
 
-def send_mail(recipient_mail, subject, body):
-    msg = Message(subject=subject,
-                  sender='notification_planex@mailtrap.io',
-                  recipients=[recipient_mail],
-                  body=body)
+def send_mail(recipient_mail, subject, body, app):
+    mail_sender = Mail(app)
 
-    # mail_sender.send(msg)
+    msg = Message(subject=subject,
+                    sender='notification_planex@mailtrap.io',
+                    recipients=[recipient_mail],
+                    body=body)
+
+    mail_sender.send(msg)
     print(msg.sender)
     print(*msg.recipients)
     print(msg.subject)
     print(msg.body)
     return "Message sent!"
 
+def current_notification(user, db, app):
+        events = load_current_events(user_id=user.id, db=db)
+        if not events:
+            return
+        mail_body = f"{user.username}, You have {len(events)} events planed:\n"
+        i = 1
+        for ev in events:
+            start_time = ev.start.time()
+            # delay = start_time - datetime.now().time()
+            mail_body += f"{i}. {ev.title} - begins at {start_time}\n"
+            if ev.description:
+                mail_body += f"\t{ev.description}\n"
+            i += 1
+        send_mail(recipient_mail=user.email, subject='Next events', body=mail_body, app=app)
 
-def current_notification(user):
-    events = load_current_events(user_id=user.id)
-    if not events:
-        return
-    mail_body = f"{user.username}, You have {len(events)} events planed:\n"
-    i = 1
-    for ev in events:
-        start_time = ev.start.time()
-        # delay = start_time - datetime.now().time()
-        mail_body += f"{i}. {ev.title} - begins at {start_time}\n"
-        if ev.description:
-            mail_body += f"\t{ev.description}\n"
-        i += 1
-    send_mail(recipient_mail=user.email, subject='Next events', body=mail_body)
 
-
-def tomorrow_notifications(user):
-    events = load_tomorrow_events(user_id=user.id)
-    tasks = load_tomorrow_tasks(user_id=user.id)
+def tomorrow_notifications(user, db, app):
+    events = load_tomorrow_events(user_id=user.id, db=db)
+    tasks = load_tomorrow_tasks(user_id=user.id, db=db)
     if not events and not tasks:
         mail_body = "Congratulations, your day is free :)"
     else:
@@ -118,11 +113,34 @@ def tomorrow_notifications(user):
                 if el.description:
                     mail_body += f"\t{el.description}\n"
                 i += 1
-    send_mail(recipient_mail=user.email, subject='Tomorrow routine', body=mail_body)
+    send_mail(recipient_mail=user.email, subject='Tomorrow routine', body=mail_body, app=app)
+
+
+def notifications_func(db, app):
+    print('Notifications thread started')
+    while True:
+        # print(datetime.now())
+        # next day routine info
+        if (datetime.now().hour == MIDNIGHT_MAIL.hour
+                and datetime.now().minute == MIDNIGHT_MAIL.hour):
+            # relocate uncompleted tasks
+            migrate_tasks(db)
+            # send mail
+            users = db.session.query(UserModel).filter_by().all()
+            for user in users:
+                tomorrow_notifications(user, db=db, app=app)
+            sleep(60)
+        # events for next TIME_REVISION minutes
+        if datetime.now().minute == TIME_REVISION:
+            users = db.session.query(UserModel).filter_by().all()
+            for user in users:
+                current_notification(user, db=db, app=app)
+            sleep((-1)*60)
+
 
 
 if __name__ == '__main__':
-    user = db.session.query(UserModel).filter_by(id=14).first()
-    current_notification(user)
-    tomorrow_notifications(user)
+    from main import app, db
+
+    notifications_func(db=db, app=app)
     app.run(debug=True)
