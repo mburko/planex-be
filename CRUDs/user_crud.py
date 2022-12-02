@@ -1,9 +1,11 @@
-from flask import Flask, request, redirect, abort
+from flask import request, redirect
 from flask_bcrypt import Bcrypt
 
 from flask_json import FlaskJSON
+
+
 from Models.users import UserModel
-import login_module
+from CRUDs import login_module
 
 
 def load_user_crud(application, database):
@@ -14,7 +16,7 @@ def load_user_crud(application, database):
 
     FlaskJSON(app)
 
-    @app.route('/register', methods=['POST'])
+    @app.route('/user/register', methods=['POST'])
     def register():
         content_type = request.headers.get('Content-Type')
         if content_type == 'application/json':
@@ -30,12 +32,12 @@ def load_user_crud(application, database):
                             or "username" not in json_data \
                             or not json_data["username"]:
                 return {
-                    "Response": "Missing information"
-                }
+                           "Response": "Missing information"
+                       }, 400
             if not login_module.validate_login(json_data["login"]):
                 return {
-                    "Response": "User already exists"
-                }
+                           "Response": "User already exists"
+                       }, 400
             hashed_password = bcryptor.generate_password_hash(json_data['password'])
             new_user = UserModel(login=json_data["login"],
                                  password=hashed_password,
@@ -45,55 +47,50 @@ def load_user_crud(application, database):
             db.session.add(new_user)
             db.session.commit()
             return {
-                "Response": "Registration successful (maybe redirect to login page)"
-            }
+                       "Response": "Registration successful"
+                   }, 200
             # return redirect(url_for('login'))
         else:
-            return 'Content-Type not supported!'
+            return {"Response": "Content-Type not supported!"}, 400
 
-    @app.route('/info')  # Retrieve single user
+    @app.route('/user')  # Retrieve single user
     @login_module.login_required
     def RetrieveSingleUser():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         if user:
-            return str(user)
+            return UserModel.info(user), 200
         else:
-            return "User not found", 400
+            return {"Response": "User not found"}, 400
 
-    @app.route('/info/update', methods=['POST'])  # update user
+    @app.route('/user', methods=['PUT'])  # update user
     @login_module.login_required
     def update():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         content_type = request.headers.get('Content-Type')
-        if request.method == 'POST':
-            if content_type == 'application/json':
-                if user:
-                    json_data = request.get_json()
-                    user.login = json_data['login']
-                    user.password = json_data['password']
-                    user.username = json_data['username']
-                    user.email = json_data['email']
-                    user.team_working = json_data['team_working']
 
-                    db.session.commit()
-                    return redirect(f'/info')
-                else:
-                    return "User not found", 400
+        if content_type == 'application/json':
+            if user:
+                json_data = request.get_json()
+                user.login = json_data['login']
+                user.password = json_data['password']
+                user.username = json_data['username']
+                user.email = json_data['email']
+                user.team_working = json_data['team_working']
+
+                db.session.commit()
+                return {"Response": "User info successfully updated"}, 200
             else:
-                return "Wrong content type supplied, JSON expected", 400
+                return {"Response": "User not found"}, 400
         else:
-            return "Wrong request", 400
+            return {"Response": "Wrong content type supplied, JSON expected"}, 400
 
-    @app.route('/delete', methods=['POST'])  # delete user
+    @app.route('/user', methods=['DELETE'])  # delete user
     @login_module.login_required
     def delete():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
-        if request.method == 'POST':
-            if user:
-                db.session.delete(user)
-                db.session.commit()
-                return redirect('/')
-            else:
-                return "User not found", 400
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            return {"Response": "User successfully deleted"}, 200
         else:
-            return "Wrong request", 400
+            return {"Response": "User not found"}, 400
