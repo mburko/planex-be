@@ -40,18 +40,21 @@ def load_event_crud(application, database):
         del json_data["category_id"]
 
         errors = EventSchema().validate(data=json_data, session=db)
-        print(errors)
         if errors:
+            print("errors", errors)
             return {
                        "Response": "Missing or incorrect information"
                    }, 400
+        print(json_data)
 
-        if json_data['start'] > json_data['finish']:
-            return {"Response": "Wrong start/finish values"}, 400
         json_data["start"] = str((json_data["start"])[2:])
         print(json_data["start"])
         json_data["finish"] = str((json_data["finish"])[2:])
         print(json_data["finish"])
+
+        if datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S') > \
+                datetime.strptime(json_data["finish"], '%y-%m-%dT%H:%M:%S'):
+            return {"Response": "Wrong start/finish values"}, 400
 
         new_event = EventModel(
             start=datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S'),  # example "20/01/01 12:12:12"
