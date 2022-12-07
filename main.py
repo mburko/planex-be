@@ -27,7 +27,7 @@ app.config['MAIL_USE_SSL'] = False
 
 db = SQLAlchemy(app)
 
-CORS(app)
+CORS(app, supports_credentials=True)
 
 if __name__ == "__main__":
     load_login_module(app, db)
