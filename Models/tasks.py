@@ -16,6 +16,7 @@ class TaskModel(db.Model, UserMixin):
     repeat = db.Column(db.DATETIME)
     priority = db.Column(db.Text)
     user_id = db.Column(db.Integer)
+    done = db.Column(db.Boolean)
 
     # def __init__(self, id, title, description, deadline, time_to_do, repeat, priority, user_id):
     #     self.id = id

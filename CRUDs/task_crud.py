@@ -57,7 +57,7 @@ def load_task_crud(application, database):
         if not tasks_list:
             return errorss.not_found
         else:
-            return TaskSchema().dump(tasks_list, many=True), 200
+            return jsonify(TaskSchema().dump(tasks_list, many=True)), 200
 
     @app.route('/task/<task_id>', methods=['GET', 'PUT', 'DELETE'])
     @login_module.login_required
@@ -75,16 +75,23 @@ def load_task_crud(application, database):
                     return errorss.bad_request
                 errors = TaskSchema().validate(data=json_data, session=db)
                 if errors:
+                    print(errors)
                     return {
-                        "Response": "Missing or incorrect information"
-                    }
+                               "Response": "Missing or incorrect information"
+                           }, 400
                 if json_data['priority'] not in ['High', 'Middle', 'Low']:
                     return {
-                        "Response": "Missing or incorrect information"
-                    }
-                updated_task = db.session.query(TaskModel).filter_by(
+                               "Response": "Missing or incorrect information"
+                           }, 400
+                json_data["deadline"] = datetime.strptime(json_data["deadline"][2:], "%y-%m-%dT%H:%M:%S")
+                json_data["time_to_do"] = datetime.strptime(json_data["time_to_do"][2:], "%y-%m-%dT%H:%M:%S")
+                print(login_module.current_user.id)
+                resp = db.session.query(TaskModel).filter_by(
                     user_id=login_module.current_user.id).update(json_data)
-                return TaskSchema().dump(updated_task), 200
+                updated_task=db.session.query(TaskModel).filter_by(
+                    user_id=login_module.current_user.id).first()
+                db.session.commit()
+                return jsonify(TaskSchema().dump(updated_task)), 200
             else:
                 return errorss.bad_request
         if request.method == 'DELETE':
