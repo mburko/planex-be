@@ -20,6 +20,8 @@ def load_event_crud(application, database):
 
     FlaskJSON(app)
 
+    lst_cases = ["YEARLY", "MONTHLY", "WEEKLY", "DAILY"]
+
     @app.route('/event', methods=['POST'])  # Create single event
     @login_module.login_required
     def CreateEvent():
@@ -55,7 +57,8 @@ def load_event_crud(application, database):
         if datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S') > \
                 datetime.strptime(json_data["finish"], '%y-%m-%dT%H:%M:%S'):
             return {"Response": "Wrong start/finish values"}, 400
-
+        if json_data['repeat'] not in lst_cases:
+            json_data['repeat'] = None
         new_event = EventModel(
             start=datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S'),  # example "20/01/01 12:12:12"
             finish=datetime.strptime(json_data["finish"], '%y-%m-%dT%H:%M:%S'),
@@ -87,7 +90,6 @@ def load_event_crud(application, database):
         if content_type != 'application/json':
             return {"Response": "Wrong content type supplied, JSON expected"}, 400
         json_data = request.get_json()
-
         # category fix
         # parsing category id
         category_id_loc = None
@@ -124,6 +126,9 @@ def load_event_crud(application, database):
         print(json_data["start"])
         json_data["finish"] = str((json_data["finish"])[2:])
         print(json_data["finish"])
+
+        if json_data['repeat'] not in lst_cases:
+            json_data['repeat'] = None
 
         event.start = datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S')
         event.finish = datetime.strptime(json_data["finish"], '%y-%m-%dT%H:%M:%S')
@@ -177,9 +182,10 @@ def load_event_crud(application, database):
         event_lst = []
         for el in user_event_lst:
             ev = (EventModel.info(db.session.query(EventModel).filter_by(id=el.event_id).first()))
+            ev["category_id"] = ""
             cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
-            ev["category_id"] = cat_id.category_id
-
+            if cat_id:
+                ev["category_id"] = cat_id.category_id
             event_lst.append(ev)
 
         if not event_lst:
@@ -204,7 +210,6 @@ def load_event_crud(application, database):
         for el in user_event_lst:
             temp = db.session.query(EventModel).filter_by(id=el.event_id).first()
             if temp.repeat:  # check if event is periodical
-                lst_cases = ["YEARLY", "MONTHLY", "WEEKLY", "DAILY"]
                 if temp.repeat not in lst_cases:
                     return {"Response": "Wrong repeat value"}, 400
                 all_dates = list(
@@ -219,7 +224,9 @@ def load_event_crud(application, database):
 
                         ev = EventModel.info(temp1)
                         cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
-                        ev["category_id"] = cat_id.category_id
+                        ev["category_id"] = ""
+                        if cat_id:
+                            ev["category_id"] = cat_id.category_id
                         event_lst.append(ev)
 
             else:  # if it's not simply check time period and add it
@@ -227,7 +234,9 @@ def load_event_crud(application, database):
                     # event_lst.append(EventModel.info(temp))
                     ev = EventModel.info(temp)
                     cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
-                    ev["category_id"] = cat_id.category_id
+                    ev["category_id"] = ""
+                    if cat_id:
+                        ev["category_id"] = cat_id.category_id
                     event_lst.append(ev)
 
         if not event_lst:
