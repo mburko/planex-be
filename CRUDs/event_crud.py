@@ -20,6 +20,8 @@ def load_event_crud(application, database):
 
     FlaskJSON(app)
 
+    lst_cases = ["YEARLY", "MONTHLY", "WEEKLY", "DAILY"]
+
     @app.route('/event', methods=['POST'])  # Create single event
     @login_module.login_required
     def CreateEvent():
@@ -40,19 +42,23 @@ def load_event_crud(application, database):
         del json_data["category_id"]
 
         errors = EventSchema().validate(data=json_data, session=db)
-        print(errors)
         if errors:
+            print("errors", errors)
             return {
                        "Response": "Missing or incorrect information"
                    }, 400
+        print(json_data)
 
-        if json_data['start'] > json_data['finish']:
-            return {"Response": "Wrong start/finish values"}, 400
         json_data["start"] = str((json_data["start"])[2:])
         print(json_data["start"])
         json_data["finish"] = str((json_data["finish"])[2:])
         print(json_data["finish"])
 
+        if datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S') > \
+                datetime.strptime(json_data["finish"], '%y-%m-%dT%H:%M:%S'):
+            return {"Response": "Wrong start/finish values"}, 400
+        if json_data['repeat'] not in lst_cases:
+            json_data['repeat'] = None
         new_event = EventModel(
             start=datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S'),  # example "20/01/01 12:12:12"
             finish=datetime.strptime(json_data["finish"], '%y-%m-%dT%H:%M:%S'),
@@ -84,14 +90,34 @@ def load_event_crud(application, database):
         if content_type != 'application/json':
             return {"Response": "Wrong content type supplied, JSON expected"}, 400
         json_data = request.get_json()
+        # category fix
+        # parsing category id
+        category_id_loc = None
+        if json_data["category_id"] and int(json_data["category_id"]):
+            category = db.session.query(CategoryModel).filter_by(id=int(json_data["category_id"])).first()
+            if not category:
+                return {"Response: Such category id does not exist"}, 400
+            else:
+                category_id_loc = category.id
+        else:
+            return {"Response": "Missing or incorrect information"}, 400
+        del json_data["category_id"]
+
         errors = EventSchema().validate(data=json_data, session=db)
         if errors:
+            print(errors)
             return {
                        "Response": "Missing or incorrect information"
                    }, 400
+
+        # previously commented
         # user_event = db.session.query(UserEventModel).filter_by(id=json_data["user_event_id"]).first()
-        # if not user_event:
-        #     return {"Response": "User event not found"}, 400
+        user_event = db.session.query(UserEventModel).filter_by(event_id=json_data["id"]).first()
+        # potentially change all user_events for all users
+
+        if not user_event:
+            return {"Response": "User event not found"},
+
         event = db.session.query(EventModel).filter_by(id=json_data["id"]).first()
         if not event:
             return {"Response": "Event not found"}, 400
@@ -101,14 +127,18 @@ def load_event_crud(application, database):
         json_data["finish"] = str((json_data["finish"])[2:])
         print(json_data["finish"])
 
+        if json_data['repeat'] not in lst_cases:
+            json_data['repeat'] = None
+
         event.start = datetime.strptime(json_data["start"], '%y-%m-%dT%H:%M:%S')
         event.finish = datetime.strptime(json_data["finish"], '%y-%m-%dT%H:%M:%S')
         event.title = json_data["title"]
         event.repeat = json_data["repeat"]
         event.description = json_data["description"]
-        # here
+
+        # here # previously commented
         # if category_id_loc:
-        #     user_event.event_id = category_id_loc
+        user_event.category_id = category_id_loc
 
         # in this update event was connected to user_event, so if necessary
         # properties of user_event can also be modified
@@ -151,13 +181,19 @@ def load_event_crud(application, database):
             return {"Response": "User events not found"}, 400
         event_lst = []
         for el in user_event_lst:
-            event_lst.append(EventModel.info(db.session.query(EventModel).filter_by(id=el.event_id).first()))
+            ev = (EventModel.info(db.session.query(EventModel).filter_by(id=el.event_id).first()))
+            ev["category_id"] = ""
+            cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
+            if cat_id:
+                ev["category_id"] = cat_id.category_id
+            event_lst.append(ev)
+
         if not event_lst:
             return {"Response": "Events not found"}, 400
 
         return jsonify(event_lst), 200
 
-    @app.route('/event/period', methods=['GET'])  # Get list of all events for user from particular date to another
+    @app.route('/event/period', methods=['POST'])  # Get list of all events for user from particular date to another
     @login_module.login_required
     def GetAllEventsInTimePeriod():
         content_type = request.headers.get('Content-Type')
@@ -173,8 +209,7 @@ def load_event_crud(application, database):
         event_lst = []
         for el in user_event_lst:
             temp = db.session.query(EventModel).filter_by(id=el.event_id).first()
-            if temp.repeat:  # check if event is periodicall
-                lst_cases = ["YEARLY", "MONTHLY", "WEEKLY"]
+            if temp.repeat:  # check if event is periodical
                 if temp.repeat not in lst_cases:
                     return {"Response": "Wrong repeat value"}, 400
                 all_dates = list(
@@ -185,10 +220,25 @@ def load_event_crud(application, database):
                         temp1 = copy.deepcopy(temp)
                         temp1.start = el1
                         temp1.finish = el1 + (temp1.finish - temp1.start)
-                        event_lst.append(EventModel.info(temp1))
+                        # event_lst.append(EventModel.info(temp1))
+
+                        ev = EventModel.info(temp1)
+                        cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
+                        ev["category_id"] = ""
+                        if cat_id:
+                            ev["category_id"] = cat_id.category_id
+                        event_lst.append(ev)
+
             else:  # if it's not simply check time period and add it
                 if parse(json_data["start_period"]) < temp.start < parse(json_data["finish_period"]):
-                    event_lst.append(EventModel.info(temp))
+                    # event_lst.append(EventModel.info(temp))
+                    ev = EventModel.info(temp)
+                    cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
+                    ev["category_id"] = ""
+                    if cat_id:
+                        ev["category_id"] = cat_id.category_id
+                    event_lst.append(ev)
+
         if not event_lst:
             return {"Response": "Events in this time period not found"}, 400
 
