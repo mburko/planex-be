@@ -1,5 +1,7 @@
 from flask_json import FlaskJSON
 from CRUDs import login_module
+from CRUDs.event_crud import GetAllEventsInTimePeriodFunc
+from Models.event import EventModel
 from Models.tasks import TaskModel, TaskSchema
 from flask import request, jsonify
 from CRUDs.resp_error import errorss
@@ -15,6 +17,21 @@ def migrate_tasks(db):
     for t in tasks:
         t.deadline += timedelta(days=1)
     db.session.commit()
+
+
+def auto_allocate_task(db, user_id, deadline):
+    # We take current time from user (theirs GMT), then deadline. Then we iterate through days to deadline, for
+    # Each day we create list of events and tasks, from events we create time intervals we can use for tasks
+    # Then when we got time intervals for that day iterate through list of tasks by their priority and place them if
+    # Some tasks cannot be placed on that date we move them to the next one if it won't break a deadline, if it does
+    # We abort function and ask customer to manually arrange that task.
+    # P.s. For now, we will use servers current time. In future, we should parse dates by GMTs
+
+    curr_time = datetime.now()
+    print(f"Current time: {curr_time}")
+    GetAllEventsInTimePeriodFunc(user_id, curr_time, deadline, db)
+
+    pass
 
 
 def load_task_crud(application, database):
@@ -43,6 +60,10 @@ def load_task_crud(application, database):
                 return {
                     "Response": "Missing or incorrect information"
                 }
+
+            # for testing auto allocation will be used by def
+            auto_allocate_task(db, login_module.current_user.id, json_data["deadline"])
+
             task = TaskSchema().load(data=json_data, session=db.session)
             db.session.add(task)
             db.session.commit()
@@ -88,7 +109,7 @@ def load_task_crud(application, database):
                 print(login_module.current_user.id)
                 resp = db.session.query(TaskModel).filter_by(
                     user_id=login_module.current_user.id).update(json_data)
-                updated_task=db.session.query(TaskModel).filter_by(
+                updated_task = db.session.query(TaskModel).filter_by(
                     user_id=login_module.current_user.id).first()
                 db.session.commit()
                 return jsonify(TaskSchema().dump(updated_task)), 200

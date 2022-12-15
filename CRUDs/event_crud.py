@@ -13,14 +13,14 @@ from Models.user_event import UserEventModel
 from datetime import datetime
 from dateutil.rrule import *
 
+lst_cases = ["YEARLY", "MONTHLY", "WEEKLY", "DAILY"]
+
 
 def load_event_crud(application, database):
     app = application
     db = database
 
     FlaskJSON(app)
-
-    lst_cases = ["YEARLY", "MONTHLY", "WEEKLY", "DAILY"]
 
     @app.route('/event', methods=['POST'])  # Create single event
     @login_module.login_required
@@ -193,7 +193,7 @@ def load_event_crud(application, database):
 
         return jsonify(event_lst), 200
 
-    @app.route('/event/period', methods=['POST'])  # Get list of all events for user from particular date to another
+    @app.route('/event/period', methods=['GET'])  # Get list of all events for user from particular date to another
     @login_module.login_required
     def GetAllEventsInTimePeriod():
         content_type = request.headers.get('Content-Type')
@@ -243,3 +243,50 @@ def load_event_crud(application, database):
             return {"Response": "Events in this time period not found"}, 400
 
         return jsonify(event_lst), 200
+
+
+def GetAllEventsInTimePeriodFunc(user_id, start_period, finish_period, db):
+    user_event_lst = db.session.query(UserEventModel).filter_by(user_id=user_id).all()
+    if not user_event_lst:
+        return []  # no events found
+
+    event_lst = []
+
+    for el in user_event_lst:
+        temp = db.session.query(EventModel).filter_by(id=el.event_id).first()
+        if temp.repeat:  # check if event is periodical
+            if temp.repeat not in lst_cases:
+                print("Wrong repeat value")
+                return []
+            all_dates = list(
+                rrule(lst_cases.index(temp.repeat), dtstart=temp.start,
+                      until=parse(finish_period)))
+            for el1 in all_dates:
+                if parse(start_period) < el1 < parse(finish_period):
+                    temp1 = copy.deepcopy(temp)
+                    temp1.start = el1
+                    temp1.finish = el1 + (temp1.finish - temp1.start)
+                    # event_lst.append(EventModel.info(temp1))
+
+                    ev = EventModel.info(temp1)
+                    cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
+                    ev["category_id"] = ""
+                    if cat_id:
+                        ev["category_id"] = cat_id.category_id
+                    event_lst.append(ev)
+
+        else:  # if it's not simply check time period and add it
+            if parse(start_period) < temp.start < parse(finish_period):
+                # event_lst.append(EventModel.info(temp))
+                ev = EventModel.info(temp)
+                cat_id = db.session.query(UserEventModel).filter_by(event_id=el.event_id).first()
+                ev["category_id"] = ""
+                if cat_id:
+                    ev["category_id"] = cat_id.category_id
+                event_lst.append(ev)
+
+    if not event_lst:
+        print("Events in this time period not foun")
+        return []
+
+    return event_lst
