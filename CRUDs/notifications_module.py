@@ -12,12 +12,8 @@ from time import sleep
 
 from threading import Thread
 
-# to do: change this import
-# from main import db
-# from main import app
 
-
-TIME_REVISION = 13  # 30  # minutes
+TIME_REVISION = 30  # minutes
 MIDNIGHT_MAIL = datetime.strptime('00:00', '%H:%M')
 
 
@@ -76,7 +72,7 @@ def current_notification(user, db, app):
         events = load_current_events(user_id=user.id, db=db)
         if not events:
             return
-        mail_body = f"{user.username}, You have {len(events)} events planed:\n"
+        mail_body = f"{user.username}, You have {len(events)} events planed for next {TIME_REVISION} minutes:\n"
         i = 1
         for ev in events:
             start_time = ev.start.time()
@@ -113,29 +109,35 @@ def tomorrow_notifications(user, db, app):
                 if el.description:
                     mail_body += f"\t{el.description}\n"
                 i += 1
-    send_mail(recipient_mail=user.email, subject='Tomorrow routine', body=mail_body, app=app)
+    send_mail(recipient_mail=user.email,
+              subject='Tomorrow routine',
+              body=mail_body,
+              app=app)
 
 
 def notifications_func(db, app):
     print('Notifications thread started')
-    while True:
-        # print(datetime.now())
-        # next day routine info
-        if (datetime.now().hour == MIDNIGHT_MAIL.hour
-                and datetime.now().minute == MIDNIGHT_MAIL.hour):
-            # relocate uncompleted tasks
-            migrate_tasks(db)
-            # send mail
-            users = db.session.query(UserModel).filter_by().all()
-            for user in users:
-                tomorrow_notifications(user, db=db, app=app)
-            sleep(60)
-        # events for next TIME_REVISION minutes
-        if datetime.now().minute == TIME_REVISION:
-            users = db.session.query(UserModel).filter_by().all()
-            for user in users:
-                current_notification(user, db=db, app=app)
-            sleep((-1)*60)
+    with app.app_context():
+        while True:
+            # next day routine info
+            if (datetime.now().hour == MIDNIGHT_MAIL.hour
+                    and datetime.now().minute == MIDNIGHT_MAIL.hour):
+                # relocate uncompleted tasks
+                migrate_tasks(db)
+                # send mail
+                users = db.session.query(UserModel).filter_by().all()
+                for user in users:
+                    tomorrow_notifications(user, db=db, app=app)
+                sleep(60)
+            # events for next TIME_REVISION minutes
+            if datetime.now().minute % TIME_REVISION == 0:
+                users = db.session.query(UserModel).filter_by().all()
+                for user in users:
+                    current_notification(user, db=db, app=app)
+                sleep((TIME_REVISION-2)*60)
+
+
+
 
 
 
