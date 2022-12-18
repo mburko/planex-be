@@ -95,8 +95,10 @@ def load_task_crud(application, database):
                 json_data["time_to_do"] = datetime.strptime(json_data["time_to_do"][2:], "%y-%m-%dT%H:%M:%S")
                 print(login_module.current_user.id)
                 resp = db.session.query(TaskModel).filter_by(
+                    id=task_id,
                     user_id=login_module.current_user.id).update(json_data)
                 updated_task=db.session.query(TaskModel).filter_by(
+                    id=task_id,
                     user_id=login_module.current_user.id).first()
                 db.session.commit()
                 return jsonify(TaskSchema().dump(updated_task)), 200
