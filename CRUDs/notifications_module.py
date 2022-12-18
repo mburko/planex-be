@@ -5,7 +5,7 @@ from Models.event import EventModel
 from Models.user_event import UserEventModel
 from Models.tasks import TaskModel
 
-from CRUDs.task_crud import migrate_tasks
+from CRUDs.task_crud import migrate_tasks, prio_to_int
 
 from datetime import datetime, timedelta
 from time import sleep
@@ -13,8 +13,8 @@ from time import sleep
 from threading import Thread
 
 
-TIME_REVISION = 30  # minutes
-MIDNIGHT_MAIL = datetime.strptime('00:00', '%H:%M')
+TIME_REVISION = 1  # minutes
+MIDNIGHT_MAIL = datetime.strptime('11:03', '%H:%M')
 
 
 def load_current_events(user_id, db):
@@ -25,6 +25,8 @@ def load_current_events(user_id, db):
             temp = db.session.query(EventModel).filter_by(id=el.event_id).first()
             if datetime.now() <= temp.start <= datetime.now() + timedelta(minutes=TIME_REVISION):
                 event_lst.append(temp)
+
+    event_lst = sorted(event_lst, key=lambda ev: ev.start)
     return event_lst
 
 
@@ -37,6 +39,8 @@ def load_tomorrow_events(user_id, db):
             tomorrow = datetime.now() + timedelta(days=1)
             if temp.start.date == tomorrow.date():
                 event_lst.append(temp)
+
+    event_lst = sorted(event_lst, EventModel.start)
     return event_lst
 
 
@@ -50,6 +54,8 @@ def load_tomorrow_tasks(user_id, db):
             print(tomorrow.date(), el.deadline.date())
             if el.deadline.date() == tomorrow.date():
                 task_lst.append(el)
+
+    task_lst = sorted(task_lst, key=lambda cur_el: prio_to_int(cur_el.priority), reverse=True)
     return task_lst
 
 
@@ -67,6 +73,7 @@ def send_mail(recipient_mail, subject, body, app):
     print(msg.subject)
     print(msg.body)
     return "Message sent!"
+
 
 def current_notification(user, db, app):
         events = load_current_events(user_id=user.id, db=db)
@@ -93,7 +100,7 @@ def tomorrow_notifications(user, db, app):
         mail_body = f"{user.username}, You have {len(events)} events and {len(tasks)} tasks planed for tomorrow:\n"
         if events:
             i = 1
-            events.sort(key=EventModel.start, reversed=False)
+            events = sorted(events, key=EventModel.start)
             for ev in events:
                 start_time = ev.start.time()
                 delay = (ev.start - datetime.now()).time()
@@ -119,22 +126,26 @@ def notifications_func(db, app):
     print('Notifications thread started')
     with app.app_context():
         while True:
+            print(datetime.now())
             # next day routine info
             if (datetime.now().hour == MIDNIGHT_MAIL.hour
-                    and datetime.now().minute == MIDNIGHT_MAIL.hour):
+                    and datetime.now().minute == MIDNIGHT_MAIL.minute):
                 # relocate uncompleted tasks
                 migrate_tasks(db)
                 # send mail
                 users = db.session.query(UserModel).filter_by().all()
                 for user in users:
+                    #if user.team_working:
                     tomorrow_notifications(user, db=db, app=app)
                 sleep(60)
             # events for next TIME_REVISION minutes
             if datetime.now().minute % TIME_REVISION == 0:
                 users = db.session.query(UserModel).filter_by().all()
                 for user in users:
+                    #if user.team_working:
                     current_notification(user, db=db, app=app)
-                sleep((TIME_REVISION-2)*60)
+                # sleep((TIME_REVISION-2)*60)
+                sleep(60)
 
 
 
