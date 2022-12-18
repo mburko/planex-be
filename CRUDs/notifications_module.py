@@ -13,8 +13,8 @@ from time import sleep
 from threading import Thread
 
 
-TIME_REVISION = 45  # minutes
-MIDNIGHT_MAIL = datetime.strptime('11:45', '%H:%M')
+TIME_REVISION = 30  # minutes
+MIDNIGHT_MAIL = datetime.strptime('11:50', '%H:%M')
 
 
 def load_current_events(user_id, db):
