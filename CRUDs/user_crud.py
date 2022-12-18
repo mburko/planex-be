@@ -2,6 +2,7 @@ from flask import request, redirect
 from flask_bcrypt import Bcrypt
 
 from flask_json import FlaskJSON
+from flask_login import logout_user
 
 from Models.users import UserModel
 from CRUDs import login_module
@@ -96,10 +97,9 @@ def load_user_crud(application, database):
                 if "username" in json_data and json_data["username"]:
                     user.username = json_data['username']
 
-                if "team_working" in json_data and json_data["team_working"]:
-                    user.username = json_data['team_working']
+                if "notifications" in json_data:
+                    user.team_working = json_data['notifications']
 
-                # user.team_working = json_data['team_working']
 
                 db.session.commit()
                 return {"Response": "User info successfully updated"}, 200
@@ -113,6 +113,7 @@ def load_user_crud(application, database):
     def delete():
         user = db.session.query(UserModel).filter_by(id=login_module.current_user.id).first()
         if user:
+            logout_user()
             db.session.delete(user)
             db.session.commit()
             return {"Response": "User successfully deleted"}, 200
