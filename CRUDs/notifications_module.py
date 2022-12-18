@@ -13,8 +13,8 @@ from time import sleep
 from threading import Thread
 
 
-TIME_REVISION = 1  # minutes
-MIDNIGHT_MAIL = datetime.strptime('11:03', '%H:%M')
+TIME_REVISION = 31  # minutes
+MIDNIGHT_MAIL = datetime.strptime('11:30', '%H:%M')
 
 
 def load_current_events(user_id, db):
@@ -40,7 +40,7 @@ def load_tomorrow_events(user_id, db):
             if temp.start.date == tomorrow.date():
                 event_lst.append(temp)
 
-    event_lst = sorted(event_lst, EventModel.start)
+    event_lst = sorted(event_lst, key=EventModel.start)
     return event_lst
 
 
