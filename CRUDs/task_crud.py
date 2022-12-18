@@ -9,6 +9,14 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, update
 
 
+def prio_to_int(priority):
+    if priority == 'High':
+        return 3
+    elif priority == 'Middle':
+        return 2
+    else:
+        return 1
+
 # send func to worker thread
 def migrate_tasks(db):
     tasks = db.session.query(TaskModel).filter_by().all()
@@ -123,13 +131,6 @@ def load_task_crud(application, database):
         if not task_lst:
             return {"Response": "Tasks not found"}, 400
 
-        def prio_to_int(priority):
-            if priority == 'High':
-                return 3
-            elif priority == 'Middle':
-                return 2
-            else:
-                return 1
 
         task_lst = sorted(task_lst, key=lambda cur_el: prio_to_int(cur_el.priority), reverse=True)
         tasks = []
