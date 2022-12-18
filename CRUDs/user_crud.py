@@ -3,7 +3,6 @@ from flask_bcrypt import Bcrypt
 
 from flask_json import FlaskJSON
 
-
 from Models.users import UserModel
 from CRUDs import login_module
 
@@ -71,11 +70,36 @@ def load_user_crud(application, database):
         if content_type == 'application/json':
             if user:
                 json_data = request.get_json()
-                user.login = json_data['login']
-                user.password = json_data['password']
-                user.username = json_data['username']
-                user.email = json_data['email']
-                user.team_working = json_data['team_working']
+
+                if "login" in json_data and json_data["login"]:
+                    if not login_module.validate_login(json_data["login"]):
+                        return {
+                                   "Response": "User already exists"
+                               }, 400
+                    else:
+                        user.login = json_data['login']
+
+                if "password" in json_data and json_data["password"] \
+                        and 'new_password' in json_data and json_data["new_password"]:
+                    if bcryptor.check_password_hash(user.password, json_data["password"]):
+                        user.password = bcryptor.generate_password_hash(
+                            json_data['new_password']
+                        )
+                    else:
+                        return {
+                                   "Response": "Wrong password"
+                               }, 400
+
+                if "email" in json_data and json_data["email"]:
+                    user.email = json_data['email']
+
+                if "username" in json_data and json_data["username"]:
+                    user.username = json_data['username']
+
+                if "team_working" in json_data and json_data["team_working"]:
+                    user.username = json_data['team_working']
+
+                # user.team_working = json_data['team_working']
 
                 db.session.commit()
                 return {"Response": "User info successfully updated"}, 200
