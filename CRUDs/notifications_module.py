@@ -14,7 +14,7 @@ from threading import Thread
 
 
 TIME_REVISION = 30  # minutes
-MIDNIGHT_MAIL = datetime.strptime('11:50', '%H:%M')
+MIDNIGHT_MAIL = datetime.strptime('23:50', '%H:%M')
 
 
 def load_current_events(user_id, db):
