@@ -13,8 +13,8 @@ from time import sleep
 from threading import Thread
 
 
-TIME_REVISION = 31  # minutes
-MIDNIGHT_MAIL = datetime.strptime('11:30', '%H:%M')
+TIME_REVISION = 45  # minutes
+MIDNIGHT_MAIL = datetime.strptime('11:45', '%H:%M')
 
 
 def load_current_events(user_id, db):
@@ -135,15 +135,15 @@ def notifications_func(db, app):
                 # send mail
                 users = db.session.query(UserModel).filter_by().all()
                 for user in users:
-                    #if user.team_working:
-                    tomorrow_notifications(user, db=db, app=app)
+                    if user.team_working == 1:
+                        tomorrow_notifications(user, db=db, app=app)
                 sleep(60)
             # events for next TIME_REVISION minutes
             if datetime.now().minute % TIME_REVISION == 0:
                 users = db.session.query(UserModel).filter_by().all()
                 for user in users:
-                    #if user.team_working:
-                    current_notification(user, db=db, app=app)
+                    if user.team_working == 1:
+                        current_notification(user, db=db, app=app)
                 # sleep((TIME_REVISION-2)*60)
                 sleep(60)
 
