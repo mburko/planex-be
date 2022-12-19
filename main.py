@@ -38,7 +38,8 @@ if __name__ == "__main__":
 
     notifications_thread = Thread(target=notifications_func, args=(db, app))
     # for better performance do not start thread when notifications are not necessary :)
-    notifications_thread.start()
+
+    # notifications_thread.start()
 
     app.run(debug=False)
 

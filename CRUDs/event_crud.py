@@ -286,7 +286,7 @@ def GetAllEventsInTimePeriodFunc(user_id, start_period, finish_period, db):
                 event_lst.append(ev)
 
     if not event_lst:
-        print("Events in this time period not foun")
+        print("Events in this time period not found")
         return []
 
     return event_lst

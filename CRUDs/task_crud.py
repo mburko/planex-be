@@ -27,11 +27,46 @@ def auto_allocate_task(db, user_id, deadline):
     # We abort function and ask customer to manually arrange that task.
     # P.s. For now, we will use servers current time. In future, we should parse dates by GMTs
 
-    curr_time = datetime.now()
+    curr_time = datetime.now()  # .strftime("%y-%m-%dT%H:%M:%S")
+    deadline = datetime.strptime(deadline, "%Y-%m-%dT%H:%M:%S")
     print(f"Current time: {curr_time}")
-    GetAllEventsInTimePeriodFunc(user_id, curr_time, deadline, db)
+    print(f"Deadline: {deadline}")
 
-    pass
+    start_day = curr_time
+    finish_day = None
+    f = True  # Flag for first day
+    while start_day < deadline:
+        if f:
+            # for first day we don't change starting time
+            finish_day = start_day + timedelta(hours=(23 - start_day.hour)) + timedelta(minutes=(
+                    59 - start_day.minute)) + timedelta(seconds=(
+                    59 - start_day.second))
+            # Supposed to be same dat 23:59:59
+
+            print(f"First day start: {start_day} / finish: {finish_day}")
+
+            event_lst = GetAllEventsInTimePeriodFunc(user_id, start_day.strftime("%y-%m-%dT%H:%M:%S"),
+                                                     finish_day.strftime("%y-%m-%dT%H:%M:%S"), db)
+            f = False
+            start_day += timedelta(days=1)
+            start_day -= timedelta(hours=(start_day.hour)) + timedelta(minutes=(
+                    start_day.minute)) + timedelta(seconds=(
+                    start_day.second))
+
+            finish_day += timedelta(days=1)
+
+            print(f"First day NEW VALUES: {start_day} / finish: {finish_day}")
+            print()
+
+        else:
+            event_lst = GetAllEventsInTimePeriodFunc(user_id, start_day.strftime("%y-%m-%dT%H:%M:%S"),
+                                                     finish_day.strftime("%y-%m-%dT%H:%M:%S"), db)
+            print(event_lst)
+
+            start_day += timedelta(days=1)
+            finish_day += timedelta(days=1)
+            print(f"NEW VALUES: {start_day} / finish: {finish_day}")
+
 
 
 def load_task_crud(application, database):
@@ -61,8 +96,10 @@ def load_task_crud(application, database):
                     "Response": "Missing or incorrect information"
                 }
 
-            # for testing auto allocation will be used by def
-            auto_allocate_task(db, login_module.current_user.id, json_data["deadline"])
+            auto_allocate = True
+
+            if auto_allocate:
+                auto_allocate_task(db, login_module.current_user.id, json_data["deadline"])
 
             task = TaskSchema().load(data=json_data, session=db.session)
             db.session.add(task)
